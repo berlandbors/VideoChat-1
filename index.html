@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Видеочат</title>
+    <style>
+        body {
+            margin: 0;
+            background: black;
+            overflow: hidden;
+        }
+
+        /* Видео вызываемого — на весь экран */
+        #remoteVideo {
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        /* Видео вызывающего — маленькое окно (PiP) */
+        #localVideo {
+            width: 150px;
+            height: 100px;
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            border-radius: 10px;
+            border: 2px solid white;
+            box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.5);
+        }
+
+        /* Кнопки */
+        #controls {
+           position: absolute;
+            bottom: 20px;
+            left: 30%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            padding: 10px;
+            background: white;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Видеопотоки -->
+    <video id="remoteVideo" autoplay playsinline></video>
+    <video id="localVideo" autoplay muted playsinline></video>
+
+    <!-- Кнопки управления -->
+    <div id="controls">
+        <button onclick="startCall()">📞 Позвонить</button>
+        <button onclick="endCall()">❌ Завершить</button>
+    </div>
+
+    <script src="https://cdn.scaledrone.com/scaledrone.min.js"></script>
+    <script>
+        const drone = new ScaleDrone('HbdbzAINeNp3Eh8f');
+        let localStream;
+        let remoteStream;
+        let peerConnection;
+        const roomName = 'video_chat_room';
+
+        // Настройки WebRTC
+        const config = {
+            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+        };
+
+        // Получение локального видео
+        async function startCall() {
+            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            document.getElementById('localVideo').srcObject = localStream;
+
+            // Подключаемся к ScaleDrone
+            drone.on('open', error => {
+                if (error) return console.error(error);
+                const room = drone.subscribe(roomName);
+                room.on('open', error => error && console.error(error));
+                room.on('members', members => {
+                    if (members.length === 2) {
+                        startWebRTC(true);
+                    }
+                });
+                room.on('data', (message, client) => {
+                    if (client.id !== drone.clientId) {
+                        handleSignalingData(message);
+                    }
+                });
+            });
+        }
+
+        function startWebRTC(isCaller) {
+            peerConnection = new RTCPeerConnection(config);
+            peerConnection.onicecandidate = event => {
+                if (event.candidate) {
+                    drone.publish({ room: roomName, message: { candidate: event.candidate } });
+                }
+            };
+            peerConnection.ontrack = event => {
+                document.getElementById('remoteVideo').srcObject = event.streams[0];
+            };
+
+            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+            if (isCaller) {
+                peerConnection.createOffer().then(offer => {
+                    return peerConnection.setLocalDescription(offer);
+                }).then(() => {
+                    drone.publish({ room: roomName, message: { offer: peerConnection.localDescription } });
+                });
+            }
+        }
+
+        function handleSignalingData(data) {
+            if (data.offer) {
+                peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+                peerConnection.createAnswer().then(answer => {
+                    return peerConnection.setLocalDescription(answer);
+                }).then(() => {
+                    drone.publish({ room: roomName, message: { answer: peerConnection.localDescription } });
+                });
+            } else if (data.answer) {
+                peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+            } else if (data.candidate) {
+                peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+            }
+        }
+
+        function endCall() {
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+            document.getElementById('remoteVideo').srcObject = null;
+            document.getElementById('localVideo').srcObject = null;
+        }
+    </script>
+</body>
+</html>
