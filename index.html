@@ -9,6 +9,7 @@
             margin: 0;
             background: black;
             overflow: hidden;
+            font-family: Arial, sans-serif;
         }
 
         /* Видео вызываемого — на весь экран */
@@ -31,22 +32,52 @@
             border-radius: 10px;
             border: 2px solid white;
             box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.5);
+            background: #333;
         }
 
         /* Кнопки */
         #controls {
-           position: absolute;
+            position: absolute;
             bottom: 20px;
-            left: 30%;
+            left: 50%;
             transform: translateX(-50%);
             display: flex;
             gap: 10px;
+            z-index: 100;
         }
+        
         button {
-            padding: 10px;
-            background: white;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.9);
             border: none;
+            border-radius: 50%;
             cursor: pointer;
+            font-size: 18px;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        button:hover {
+            background: rgba(200, 200, 200, 0.9);
+        }
+        
+        #status {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 20px;
+            border-radius: 20px;
+            z-index: 100;
+        }
+        
+        .hidden {
+            display: none !important;
         }
     </style>
 </head>
@@ -56,93 +87,254 @@
     <video id="remoteVideo" autoplay playsinline></video>
     <video id="localVideo" autoplay muted playsinline></video>
 
+    <!-- Статус -->
+    <div id="status">Подключение...</div>
+
     <!-- Кнопки управления -->
     <div id="controls">
-        <button onclick="startCall()">📞 </button>
-        <button onclick="endCall()">❌ </button>
+        <button id="startButton" onclick="startCall()">📞</button>
+        <button id="endButton" onclick="endCall()" class="hidden">❌</button>
     </div>
 
     <script src="https://cdn.scaledrone.com/scaledrone.min.js"></script>
     <script>
-        const drone = new ScaleDrone('HbdbzAINeNp3Eh8f');
+        const CHANNEL_ID = 'video-chat-' + Math.random().toString(36).substring(2, 10);
+        let drone;
+        let room;
         let localStream;
-        let remoteStream;
         let peerConnection;
-        const roomName = 'video_chat_room';
+        let isCaller = false;
 
         // Настройки WebRTC
         const config = {
-            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ]
         };
 
-        // Получение локального видео
-        async function startCall() {
-            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-            document.getElementById('localVideo').srcObject = localStream;
+        // Элементы интерфейса
+        const statusElement = document.getElementById('status');
+        const startButton = document.getElementById('startButton');
+        const endButton = document.getElementById('endButton');
 
-            // Подключаемся к ScaleDrone
-            drone.on('open', error => {
-                if (error) return console.error(error);
-                const room = drone.subscribe(roomName);
-                room.on('open', error => error && console.error(error));
-                room.on('members', members => {
-                    if (members.length === 2) {
-                        startWebRTC(true);
-                    }
+        // Инициализация при загрузке
+        window.addEventListener('load', initialize);
+
+        async function initialize() {
+            try {
+                statusElement.textContent = 'Запрос доступа к камере и микрофону...';
+                
+                // Получаем доступ к медиаустройствам
+                localStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: true, 
+                    audio: true 
                 });
-                room.on('data', (message, client) => {
-                    if (client.id !== drone.clientId) {
-                        handleSignalingData(message);
-                    }
-                });
-            });
-        }
-
-        function startWebRTC(isCaller) {
-            peerConnection = new RTCPeerConnection(config);
-            peerConnection.onicecandidate = event => {
-                if (event.candidate) {
-                    drone.publish({ room: roomName, message: { candidate: event.candidate } });
-                }
-            };
-            peerConnection.ontrack = event => {
-                document.getElementById('remoteVideo').srcObject = event.streams[0];
-            };
-
-            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-
-            if (isCaller) {
-                peerConnection.createOffer().then(offer => {
-                    return peerConnection.setLocalDescription(offer);
-                }).then(() => {
-                    drone.publish({ room: roomName, message: { offer: peerConnection.localDescription } });
-                });
+                
+                document.getElementById('localVideo').srcObject = localStream;
+                statusElement.textContent = 'Готов к подключению';
+                
+            } catch (error) {
+                console.error('Ошибка доступа к медиаустройствам:', error);
+                statusElement.textContent = 'Ошибка доступа к камере/микрофону';
             }
         }
 
-        function handleSignalingData(data) {
-            if (data.offer) {
-                peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
-                peerConnection.createAnswer().then(answer => {
-                    return peerConnection.setLocalDescription(answer);
-                }).then(() => {
-                    drone.publish({ room: roomName, message: { answer: peerConnection.localDescription } });
+        async function startCall() {
+            try {
+                statusElement.textContent = 'Подключение к серверу...';
+                
+                // Инициализируем ScaleDrone
+                drone = new ScaleDrone('HbdbzAINeNp3Eh8f');
+                
+                drone.on('open', error => {
+                    if (error) {
+                        console.error('Ошибка подключения к ScaleDrone:', error);
+                        statusElement.textContent = 'Ошибка подключения';
+                        return;
+                    }
+                    
+                    statusElement.textContent = 'Поиск собеседника...';
+                    
+                    // Подписываемся на комнату
+                    room = drone.subscribe(CHANNEL_ID);
+                    
+                    room.on('open', error => {
+                        if (error) {
+                            console.error('Ошибка входа в комнату:', error);
+                            statusElement.textContent = 'Ошибка входа в комнату';
+                        }
+                    });
+                    
+                    room.on('members', members => {
+                        console.log('Участники комнаты:', members);
+                        
+                        // Если в комнате больше 2 участников (включая нас)
+                        if (members.length > 2) {
+                            statusElement.textContent = 'Комната занята';
+                            return;
+                        }
+                        
+                        // Если мы второй участник
+                        if (members.length === 2) {
+                            isCaller = false;
+                            startWebRTC();
+                        } else {
+                            isCaller = true;
+                        }
+                    });
+                    
+                    room.on('member_join', member => {
+                        console.log('Новый участник:', member);
+                        if (drone.clientId && member.id !== drone.clientId) {
+                            isCaller = true;
+                            startWebRTC();
+                        }
+                    });
+                    
+                    room.on('data', (message, client) => {
+                        if (client.id !== drone.clientId) {
+                            handleSignalingData(message);
+                        }
+                    });
                 });
-            } else if (data.answer) {
-                peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-            } else if (data.candidate) {
-                peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+                
+                drone.on('error', error => {
+                    console.error('ScaleDrone error:', error);
+                    statusElement.textContent = 'Ошибка соединения';
+                });
+                
+                // Обновляем UI
+                startButton.classList.add('hidden');
+                endButton.classList.remove('hidden');
+                
+            } catch (error) {
+                console.error('Ошибка начала звонка:', error);
+                statusElement.textContent = 'Ошибка начала звонка';
+            }
+        }
+
+        function startWebRTC() {
+            statusElement.textContent = isCaller ? 'Установление соединения...' : 'Прием входящего звонка...';
+            
+            // Создаем PeerConnection
+            peerConnection = new RTCPeerConnection(config);
+            
+            // Обработчики событий WebRTC
+            peerConnection.onicecandidate = event => {
+                if (event.candidate) {
+                    drone.publish({
+                        room: CHANNEL_ID,
+                        message: { candidate: event.candidate }
+                    });
+                }
+            };
+            
+            peerConnection.ontrack = event => {
+                console.log('Получен удаленный поток');
+                document.getElementById('remoteVideo').srcObject = event.streams[0];
+                statusElement.textContent = 'Соединение установлено';
+            };
+            
+            peerConnection.onconnectionstatechange = () => {
+                console.log('Состояние соединения:', peerConnection.connectionState);
+                if (peerConnection.connectionState === 'connected') {
+                    statusElement.textContent = 'Соединение установлено';
+                }
+            };
+            
+            // Добавляем локальные треки
+            localStream.getTracks().forEach(track => {
+                peerConnection.addTrack(track, localStream);
+            });
+            
+            // Если мы инициатор, создаем offer
+            if (isCaller) {
+                createOffer();
+            }
+        }
+
+        async function createOffer() {
+            try {
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+                
+                drone.publish({
+                    room: CHANNEL_ID,
+                    message: { offer: peerConnection.localDescription }
+                });
+                
+            } catch (error) {
+                console.error('Ошибка создания offer:', error);
+                statusElement.textContent = 'Ошибка установления соединения';
+            }
+        }
+
+        async function handleSignalingData(data) {
+            try {
+                if (data.offer) {
+                    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+                    
+                    const answer = await peerConnection.createAnswer();
+                    await peerConnection.setLocalDescription(answer);
+                    
+                    drone.publish({
+                        room: CHANNEL_ID,
+                        message: { answer: peerConnection.localDescription }
+                    });
+                    
+                } else if (data.answer) {
+                    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+                    
+                } else if (data.candidate) {
+                    await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+                }
+            } catch (error) {
+                console.error('Ошибка обработки signaling data:', error);
             }
         }
 
         function endCall() {
+            statusElement.textContent = 'Звонок завершен';
+            
+            // Закрываем WebRTC соединение
             if (peerConnection) {
                 peerConnection.close();
                 peerConnection = null;
             }
+            
+            // Отключаемся от комнаты
+            if (room) {
+                room.unsubscribe();
+                room = null;
+            }
+            
+            // Отключаемся от ScaleDrone
+            if (drone) {
+                drone.close();
+                drone = null;
+            }
+            
+            // Останавливаем локальные треки
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+            }
+            
+            // Сбрасываем видео элементы
             document.getElementById('remoteVideo').srcObject = null;
-            document.getElementById('localVideo').srcObject = null;
+            
+            // Обновляем UI
+            startButton.classList.remove('hidden');
+            endButton.classList.add('hidden');
+            
+            // Перезагружаем страницу для нового звонка
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
         }
+
+        // Обработка закрытия страницы
+        window.addEventListener('beforeunload', endCall);
     </script>
 </body>
 </html>
