@@ -236,7 +236,9 @@
       drone = new ScaleDrone(currentChannelId);
       drone.on('open', err => {
         if (err) return alert('Ошибка подключения к ScaleDrone');
-        room = drone.subscribe(currentRoomName);
+
+        // ВАЖНО: используем observable- комнаты
+        room = drone.subscribe('observable-' + currentRoomName);
 
         room.on('members', members => {
           if (members.length > 2) {
