@@ -5,110 +5,83 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Видеочат</title>
   <style>
-    body {
-      margin: 0;
-      background: black;
-      font-family: Arial, sans-serif;
-      overflow: hidden;
-    }
+    body { margin: 0; background: black; font-family: Arial, sans-serif; overflow: hidden; }
 
     /* Форма входа */
     #loginForm {
-      position: absolute;
-      top: 50%; left: 50%;
+      position: absolute; top: 50%; left: 50%;
       transform: translate(-50%, -50%);
       background: rgba(255,255,255,0.95);
-      padding: 30px;
-      border-radius: 15px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.3);
-      z-index: 1000;
-      min-width: 300px;
+      padding: 25px; border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.3);
+      z-index: 1000; min-width: 300px;
     }
     #loginForm.hidden { display: none; }
-
-    .form-group { margin-bottom: 20px; }
-    label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; font-weight: bold; margin-bottom: 5px; }
     input[type="text"] {
-      width: 100%; padding: 12px;
-      border: 2px solid #ddd; border-radius: 8px;
-      font-size: 16px;
+      width: 100%; padding: 10px;
+      border: 2px solid #ddd; border-radius: 8px; font-size: 14px;
     }
-    input[type="text"]:focus { border-color: #4CAF50; outline: none; }
-
     button {
-      padding: 15px; width: 100%;
-      background: #4CAF50; color: white;
-      border: none; border-radius: 8px;
-      cursor: pointer; font-size: 16px; font-weight: bold;
+      padding: 12px; width: 100%; font-size: 15px;
+      border: none; border-radius: 8px; font-weight: bold;
+      background: #4CAF50; color: white; cursor: pointer;
     }
     button:hover { background: #45a049; }
 
     /* Видео */
     #remoteVideo {
       width: 100vw; height: 100vh;
-      object-fit: cover;
+      object-fit: cover; background: #000;
       position: absolute; top: 0; left: 0;
-      background: #000;
     }
     #localVideo {
       width: 160px; height: 110px;
       position: absolute; bottom: 15px; right: 15px;
-      border-radius: 10px;
-      border: 2px solid white;
-      box-shadow: 0 0 10px rgba(255,255,255,0.5);
+      border-radius: 8px; border: 2px solid white;
+      box-shadow: 0 0 8px rgba(255,255,255,0.5);
       background: #333;
     }
     .hidden { display: none !important; }
 
     /* Статус */
     #status {
-      position: absolute; top: 20px; left: 50%;
+      position: absolute; top: 15px; left: 50%;
       transform: translateX(-50%);
-      background: rgba(0,0,0,0.6);
-      padding: 8px 20px;
-      border-radius: 20px;
-      color: white;
-      display: flex; align-items: center; gap: 10px;
+      background: rgba(0,0,0,0.6); color: white;
+      padding: 6px 16px; border-radius: 20px;
+      display: flex; align-items: center; gap: 8px;
       z-index: 100;
     }
-    #statusDot {
-      width: 12px; height: 12px; border-radius: 50%;
-      background: gray;
-    }
+    #statusDot { width: 10px; height: 10px; border-radius: 50%; background: gray; }
 
-    /* Панель управления */
+    /* Панель */
     #controls {
       position: absolute; bottom: 20px; left: 50%;
       transform: translateX(-50%);
       display: flex; gap: 12px; z-index: 100;
     }
     .control-btn {
-      width: 50px; height: 50px;
-      border-radius: 50%;
-      border: none;
-      font-size: 18px;
-      cursor: pointer;
+      width: 48px; height: 48px; border-radius: 50%;
+      border: none; font-size: 18px; cursor: pointer;
       background: rgba(255,255,255,0.9);
     }
     .danger { background: #e74c3c; color: white; }
     .toggled { background: #f39c12; color: white; }
 
-    /* Информация о комнате */
+    /* Инфо */
     #roomInfo {
-      position: absolute; top: 20px; right: 20px;
-      background: rgba(0,0,0,0.6);
-      padding: 8px 12px;
-      border-radius: 10px;
-      font-size: 13px;
-      color: white;
-      z-index: 100;
+      position: absolute; top: 15px; right: 15px;
+      background: rgba(0,0,0,0.6); color: white;
+      padding: 8px 12px; border-radius: 8px;
+      font-size: 13px; z-index: 100;
     }
     #copyRoomBtn, #shareRoomBtn {
-      margin-top: 5px;
-      font-size: 12px;
+      margin-top: 5px; font-size: 12px;
       background: #2196F3; color: white;
-      padding: 5px 8px; border-radius: 6px;
-      border: none; cursor: pointer;
+      padding: 4px 6px; border: none; border-radius: 6px;
+      cursor: pointer;
     }
     #copyRoomBtn:hover, #shareRoomBtn:hover { background: #1976D2; }
   </style>
@@ -116,7 +89,7 @@
 <body>
   <!-- Форма -->
   <div id="loginForm">
-    <h2 style="text-align:center; margin-bottom:20px; color:#333;">Вход в видеочат</h2>
+    <h3 style="text-align:center;">Вход в видеочат</h3>
     <div class="form-group">
       <label for="channelId">ScaleDrone Channel ID:</label>
       <input type="text" id="channelId" placeholder="Введите Channel ID">
@@ -141,7 +114,7 @@
   <!-- Панель -->
   <div id="controls" class="hidden">
     <button class="control-btn" id="startButton" onclick="startCall()">📞</button>
-    <button class="control-btn danger" id="endButton" onclick="endCall()">❌</button>
+    <button class="control-btn danger" onclick="endCall()">❌</button>
     <button class="control-btn" id="micButton" onclick="toggleMic()">🎤</button>
     <button class="control-btn" id="camButton" onclick="toggleCam()">📷</button>
   </div>
@@ -155,18 +128,11 @@
 
   <script src="https://cdn.scaledrone.com/scaledrone.min.js"></script>
   <script>
-    let drone, room, localStream, peerConnection;
-    let isCaller = false;
+    let drone, room, pc, localStream;
     let currentChannelId = '', currentRoomName = '';
 
-    const config = {
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
-      ]
-    };
+    const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
-    // UI элементы
     const loginForm = document.getElementById('loginForm');
     const statusEl = document.getElementById('status');
     const statusText = document.getElementById('statusText');
@@ -176,156 +142,132 @@
     const controls = document.getElementById('controls');
     const roomInfo = document.getElementById('roomInfo');
     const currentRoomNameSpan = document.getElementById('currentRoomName');
-    const micButton = document.getElementById('micButton');
-    const camButton = document.getElementById('camButton');
 
     async function initializeChat() {
       currentChannelId = document.getElementById('channelId').value.trim();
       currentRoomName = document.getElementById('roomName').value.trim();
+      if (!currentChannelId || !currentRoomName) return alert('Введите Channel ID и комнату');
 
-      if (!currentChannelId || !currentRoomName) {
-        alert('Введите Channel ID и название комнаты');
-        return;
-      }
+      loginForm.classList.add('hidden');
+      statusEl.classList.remove('hidden');
+      controls.classList.remove('hidden');
+      roomInfo.classList.remove('hidden');
+      remoteVideo.classList.remove('hidden');
+      localVideo.classList.remove('hidden');
+      currentRoomNameSpan.textContent = currentRoomName;
+      statusText.textContent = 'Нажмите 📞 для звонка';
+      statusDot.style.background = 'gray';
 
-      try {
-        statusEl.classList.remove('hidden');
-        statusText.textContent = 'Запрос доступа к камере/микрофону...';
-
-        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        localVideo.srcObject = localStream;
-        localVideo.classList.remove('hidden');
-
-        loginForm.classList.add('hidden');
-        remoteVideo.classList.remove('hidden');
-        controls.classList.remove('hidden');
-        roomInfo.classList.remove('hidden');
-        currentRoomNameSpan.textContent = currentRoomName;
-
-        statusText.textContent = 'Нажмите 📞 чтобы начать звонок';
-        statusDot.style.background = 'gray';
-      } catch (err) {
-        console.error(err);
-        alert('Нет доступа к камере/микрофону');
-      }
+      localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      localVideo.srcObject = localStream;
     }
 
     function copyRoomName() {
-      navigator.clipboard.writeText(currentRoomName).then(() => {
-        const btn = document.getElementById('copyRoomBtn');
-        const original = btn.textContent;
-        btn.textContent = '✓ Скопировано';
-        setTimeout(() => btn.textContent = original, 2000);
-      });
+      navigator.clipboard.writeText(currentRoomName);
+      const btn = document.getElementById('copyRoomBtn');
+      btn.textContent = '✓ Скопировано';
+      setTimeout(()=>btn.textContent='📋 Скопировать',2000);
     }
 
     function shareRoom() {
       const shareUrl = `${location.origin}${location.pathname}?room=${encodeURIComponent(currentRoomName)}`;
-      navigator.clipboard.writeText(shareUrl).then(() => {
-        const btn = document.getElementById('shareRoomBtn');
-        const original = btn.textContent;
-        btn.textContent = '✓ Ссылка скопирована';
-        setTimeout(() => btn.textContent = original, 2000);
-      });
+      navigator.clipboard.writeText(shareUrl);
+      const btn = document.getElementById('shareRoomBtn');
+      btn.textContent = '✓ Ссылка скопирована';
+      setTimeout(()=>btn.textContent='🔗 Поделиться',2000);
     }
 
-    async function startCall() {
+    function startCall() {
       statusText.textContent = 'Подключение...';
       statusDot.style.background = 'orange';
 
       drone = new ScaleDrone(currentChannelId);
-      drone.on('open', err => {
-        if (err) return alert('Ошибка подключения к ScaleDrone');
+      const roomName = 'observable-' + currentRoomName;
 
-        // ВАЖНО: используем observable- комнаты
-        room = drone.subscribe('observable-' + currentRoomName);
+      drone.on('open', error => {
+        if (error) return console.error(error);
 
+        room = drone.subscribe(roomName);
         room.on('members', members => {
-          if (members.length > 2) {
-            statusText.textContent = 'Комната занята';
-            return;
-          }
-          isCaller = members.length === 1;
-          if (!isCaller) startWebRTC();
-        });
-
-        room.on('member_join', member => {
-          if (drone.clientId && member.id !== drone.clientId) {
-            isCaller = true;
-            startWebRTC();
-          }
-        });
-
-        room.on('data', (msg, client) => {
-          if (client.id !== drone.clientId) handleSignalingData(msg);
+          const isOfferer = members.length === 2;
+          startWebRTC(isOfferer);
         });
       });
     }
 
-    function startWebRTC() {
-      peerConnection = new RTCPeerConnection(config);
-      localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-
-      peerConnection.onicecandidate = e => {
-        if (e.candidate) drone.publish({ room: currentRoomName, message: { candidate: e.candidate } });
-      };
-      peerConnection.ontrack = e => {
-        remoteVideo.srcObject = e.streams[0];
-        statusText.textContent = 'Соединение установлено';
-        statusDot.style.background = 'green';
-      };
-
-      if (isCaller) createOffer();
+    function sendMessage(message) {
+      drone.publish({ room: 'observable-' + currentRoomName, message });
     }
 
-    async function createOffer() {
-      const offer = await peerConnection.createOffer();
-      await peerConnection.setLocalDescription(offer);
-      drone.publish({ room: currentRoomName, message: { offer: peerConnection.localDescription } });
-    }
+    function startWebRTC(isOfferer) {
+      pc = new RTCPeerConnection(config);
 
-    async function handleSignalingData(data) {
-      if (data.offer) {
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
-        const answer = await peerConnection.createAnswer();
-        await peerConnection.setLocalDescription(answer);
-        drone.publish({ room: currentRoomName, message: { answer: peerConnection.localDescription } });
-      } else if (data.answer) {
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-      } else if (data.candidate) {
-        await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+      localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+      pc.onicecandidate = event => {
+        if (event.candidate) sendMessage({ candidate: event.candidate });
+      };
+
+      pc.ontrack = event => {
+        const stream = event.streams[0];
+        if (!remoteVideo.srcObject || remoteVideo.srcObject.id !== stream.id) {
+          remoteVideo.srcObject = stream;
+          statusText.textContent = 'Соединение установлено';
+          statusDot.style.background = 'green';
+        }
+      };
+
+      if (isOfferer) {
+        pc.onnegotiationneeded = () => {
+          pc.createOffer().then(localDescCreated).catch(console.error);
+        };
       }
+
+      room.on('data', (message, client) => {
+        if (client.id === drone.clientId) return;
+        if (message.sdp) {
+          pc.setRemoteDescription(new RTCSessionDescription(message.sdp), () => {
+            if (pc.remoteDescription.type === 'offer') {
+              pc.createAnswer().then(localDescCreated).catch(console.error);
+            }
+          }, console.error);
+        } else if (message.candidate) {
+          pc.addIceCandidate(new RTCIceCandidate(message.candidate));
+        }
+      });
+    }
+
+    function localDescCreated(desc) {
+      pc.setLocalDescription(desc, () => sendMessage({ sdp: pc.localDescription }), console.error);
     }
 
     function endCall() {
-      if (peerConnection) { peerConnection.close(); peerConnection = null; }
-      if (drone) { drone.close(); drone = null; }
-      remoteVideo.srcObject = null;
-      statusText.textContent = 'Звонок завершён';
-      statusDot.style.background = 'red';
+      if (pc) { pc.close(); pc=null; }
+      if (drone) { drone.close(); drone=null; }
+      remoteVideo.srcObject=null;
+      statusText.textContent='Звонок завершён';
+      statusDot.style.background='red';
     }
 
     function toggleMic() {
-      const enabled = localStream.getAudioTracks()[0].enabled;
-      localStream.getAudioTracks()[0].enabled = !enabled;
-      micButton.classList.toggle('toggled', enabled);
+      const track = localStream.getAudioTracks()[0];
+      track.enabled = !track.enabled;
+      document.getElementById('micButton').classList.toggle('toggled', !track.enabled);
     }
 
     function toggleCam() {
-      const enabled = localStream.getVideoTracks()[0].enabled;
-      localStream.getVideoTracks()[0].enabled = !enabled;
-      camButton.classList.toggle('toggled', enabled);
+      const track = localStream.getVideoTracks()[0];
+      track.enabled = !track.enabled;
+      document.getElementById('camButton').classList.toggle('toggled', !track.enabled);
     }
 
     window.addEventListener('beforeunload', endCall);
 
-    // Автозаполнение комнаты из URL (?room=...)
+    // автозаполнение из URL ?room=
     window.addEventListener('DOMContentLoaded', () => {
       const urlParams = new URLSearchParams(window.location.search);
       const roomParam = urlParams.get('room');
-      if (roomParam) {
-        document.getElementById('roomName').value = roomParam;
-      }
+      if (roomParam) document.getElementById('roomName').value = roomParam;
     });
   </script>
 </body>
