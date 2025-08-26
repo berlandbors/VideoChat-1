@@ -1,248 +1,247 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Видеочат</title>
-<style>
-  :root{
-    --radius: 12px;
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Видеочат WebRTC + ScaleDrone</title>
 
-    /* размеры плавно подстраиваются под экран */
-    --btn: clamp(44px, 6.2vw, 56px);
-    --btn-fz: clamp(16px, 2.4vw, 18px);
-    --badge-fz: clamp(12px, 2.2vw, 14px);
+  <style>
+    :root{
+      --radius: 12px;
 
-    /* PiP-окно (локальное видео) */
-    --pip-w: clamp(24vw, 32vw, 220px);
-    --pip-aspect: 16/11;
-  }
+      /* плавные размеры */
+      --btn: clamp(44px, 6.2vw, 56px);
+      --btn-fz: clamp(16px, 2.4vw, 18px);
+      --badge-fz: clamp(12px, 2.2vw, 14px);
 
-  /* База и safe-area */
-  *{ box-sizing: border-box; }
-  html, body{ height: 100%; }
-  body{
-    margin: 0;
-    background: #000;
-    color: #fff;
-    font-family: Arial, sans-serif;
-    overflow: hidden;
+      /* PiP */
+      --pip-w: clamp(24vw, 32vw, 220px);
+      --pip-aspect: 16/11;
 
-    /* поля под «чёлки» и жестовую навигацию */
-    padding-top: env(safe-area-inset-top);
-    padding-right: env(safe-area-inset-right);
-    padding-bottom: env(safe-area-inset-bottom);
-    padding-left: env(safe-area-inset-left);
-  }
-
-  .hidden{ display: none !important; }
-
-  /* ================= ФОРМА ВХОДА ================= */
-  #loginForm{
-    position: fixed;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    z-index: 1000;
-    background: rgba(0,0,0,.25);
-    padding: 16px;
-  }
-  #loginForm > div, /* на случай, если обернёшь в .card */
-  #loginForm{
-    background: rgba(255,255,255,.95);
-    color: #111;
-    padding: 25px;
-    border-radius: var(--radius);
-    box-shadow: 0 0 15px rgba(0,0,0,.3);
-    min-width: min(92vw, 320px);
-    max-width: min(92vw, 520px);
-  }
-  .form-group{ margin-bottom: 14px; }
-  label{ display:block; font-weight:700; margin-bottom:6px; color:#333; }
-  input[type="text"]{
-    width:100%; padding:10px 12px;
-    border:2px solid #ddd; border-radius:10px;
-    font-size: clamp(14px, 2.6vw, 16px);
-    outline: none;
-  }
-  button{
-    width:100%; padding:12px;
-    font-size: clamp(14px, 2.6vw, 15px);
-    border:none; border-radius:10px; font-weight:700;
-    background:#4CAF50; color:#fff; cursor:pointer;
-  }
-  button:hover{ background:#45a049; }
-
-  /* ================= ВИДЕО ================= */
-  #remoteVideo{
-    position: fixed; inset: 0;
-    width: 100vw; height: 100vh;
-    object-fit: cover;
-    background: #000;
-    z-index: 0;
-  }
-
-  /* PiP — всегда поверх, с минимальными размерами */
-  #localVideo{
-    position: fixed;
-    right: calc(10px + env(safe-area-inset-right));
-    bottom: calc(14px + env(safe-area-inset-bottom));
-    width: var(--pip-w);
-    height: calc(var(--pip-w) / var(--pip-aspect));
-    min-width: 120px;
-    min-height: 80px;
-    object-fit: cover;
-    border-radius: 10px;
-    border: 2px solid #fff;
-    box-shadow: 0 0 8px rgba(255,255,255,.5), 0 8px 24px rgba(0,0,0,.4);
-    background:#333;
-    z-index: 60;
-  }
-
-  /* ================= СТАТУС (верх-центр) ================= */
-  #status{
-    position: fixed;
-    top: calc(12px + env(safe-area-inset-top));
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0,0,0,.6);
-    color:#fff;
-    padding: 6px 14px;
-    border-radius: 999px;
-    display:flex; align-items:center; gap:8px;
-    z-index: 90;
-    font-size: var(--badge-fz);
-    white-space: nowrap;
-  }
-  #statusDot{
-    width:10px; height:10px; border-radius:50%;
-    background: gray;
-  }
-
-  /* ================= КОНТРОЛЛЫ (низ-центр) ================= */
-  #controls{
-    position: fixed;
-    left: 50%;
-    transform: translateX(-50%);
-    bottom: calc(16px + env(safe-area-inset-bottom));
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: 1fr;
-    gap: 10px;
-    background: rgba(0,0,0,.45);
-    padding: 8px 10px;
-    border-radius: 999px;
-    backdrop-filter: blur(4px);
-    z-index: 55;
-  }
-  .control-btn{
-    width: var(--btn);
-    height: var(--btn);
-    border-radius: 50%;
-    border: none;
-    font-size: var(--btn-fz);
-    cursor: pointer;
-    background: rgba(255,255,255,.92);
-    color: #111;
-    display: grid; place-items: center;
-  }
-  .control-btn:active{ transform: translateY(1px); }
-  .danger{ background:#e74c3c; color:#fff; }
-  .toggled{ background:#f39c12; color:#fff; }
-
-  /* ================= ИНФО О КОМНАТЕ (верх-право) ================= */
-  #roomInfo{
-    position: fixed;
-    top: calc(12px + env(safe-area-inset-top));
-    right: calc(12px + env(safe-area-inset-right));
-    background: rgba(0,0,0,.6);
-    color:#fff;
-    padding: 8px 12px;
-    border-radius: 10px;
-    font-size: var(--badge-fz);
-    z-index: 80;
-    display: grid;
-    gap: 6px;
-    justify-items: end;
-    max-width: 60vw;
-  }
-  #copyRoomBtn, #shareRoomBtn{
-    font-size: clamp(12px, 2.2vw, 13px);
-    background:#2196F3; color:#fff;
-    padding: 4px 8px; border:none; border-radius:8px;
-    cursor:pointer;
-  }
-  #copyRoomBtn:hover, #shareRoomBtn:hover{ background:#1976D2; }
-
-  /* ===================== БРЕЙКПОИНТЫ ===================== */
-
-  /* Узкие телефоны */
-  @media (max-width: 420px){
-    /* Компактные кнопки в roomInfo */
-    #roomInfo{
-      padding: 6px 8px;
-      justify-items: stretch;
-      max-width: 72vw;
-    }
-    #roomInfo button{
-      display:block; width:100%;
-      font-size: 11px; padding: 4px 6px; margin-top: 4px;
+      /* высота бейджа статуса (заполним из JS) */
+      --status-h: 44px;
     }
 
-    /* Панель 2×2 */
+    *{ box-sizing: border-box; }
+    html, body{ height: 100%; }
+    body{
+      margin: 0;
+      background:#000;
+      color:#fff;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+
+      /* safe-area (чёлки/жестовая навигация) */
+      padding-top: env(safe-area-inset-top);
+      padding-right: env(safe-area-inset-right);
+      padding-bottom: env(safe-area-inset-bottom);
+      padding-left: env(safe-area-inset-left);
+    }
+
+    .hidden{ display:none !important; }
+
+    /* ===== ФОРМА ВХОДА ===== */
+    #loginForm{
+      position: fixed; inset:0;
+      display:grid; place-items:center;
+      z-index:1000;
+      background: rgba(0,0,0,.25);
+      padding:16px;
+    }
+    #loginForm > .card, #loginForm{
+      background: rgba(255,255,255,.95);
+      color:#111;
+      padding:25px;
+      border-radius: var(--radius);
+      box-shadow: 0 0 15px rgba(0,0,0,.3);
+      min-width: min(92vw, 320px);
+      max-width: min(92vw, 520px);
+    }
+    .form-group{ margin-bottom:14px; }
+    label{ display:block; font-weight:700; margin-bottom:6px; color:#333; }
+    input[type="text"]{
+      width:100%; padding:10px 12px;
+      border:2px solid #ddd; border-radius:10px;
+      font-size: clamp(14px, 2.6vw, 16px);
+      outline:none;
+    }
+    button{
+      width:100%; padding:12px;
+      font-size: clamp(14px, 2.6vw, 15px);
+      border:none; border-radius:10px; font-weight:700;
+      background:#4CAF50; color:#fff; cursor:pointer;
+    }
+    button:hover{ background:#45a049; }
+
+    /* ===== ВИДЕО ===== */
+    #remoteVideo{
+      position: fixed; inset:0;
+      width:100vw; height:100vh;
+      object-fit: cover;
+      background:#000;
+      z-index:0;
+    }
+
+    /* PiP — всегда поверх, с минимальными размерами, не схлопывается */
+    #localVideo{
+      position: fixed;
+      right: calc(10px + env(safe-area-inset-right));
+      bottom: calc(14px + env(safe-area-inset-bottom));
+      left: auto; top: auto; /* на случай перетаскивания переключимся на left/top */
+      width: var(--pip-w);
+      height: calc(var(--pip-w) / var(--pip-aspect));
+      min-width: 120px;
+      min-height: 80px;
+      object-fit: cover;
+      border-radius: 10px;
+      border: 2px solid #fff;
+      box-shadow: 0 0 8px rgba(255,255,255,.5), 0 8px 24px rgba(0,0,0,.4);
+      background:#333;
+      z-index:60;
+      cursor: move; /* подсказка что можно таскать */
+    }
+
+    /* ===== СТАТУС (верх-центр) ===== */
+    #status{
+      position: fixed;
+      top: calc(12px + env(safe-area-inset-top));
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,.6);
+      color:#fff;
+      padding: 6px 14px;
+      border-radius: 999px;
+      display:flex; align-items:center; gap:8px;
+      z-index:90;
+      font-size: var(--badge-fz);
+      white-space: nowrap;
+      max-width: 86vw;
+      overflow: hidden; text-overflow: ellipsis;
+    }
+    #statusDot{ width:10px; height:10px; border-radius:50%; background:gray; }
+
+    /* ===== ПАНЕЛЬ (низ-центр) ===== */
     #controls{
-      grid-auto-flow: row;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 8px;
-      padding: 6px;
-      border-radius: 16px;
-      bottom: calc(10px + env(safe-area-inset-bottom));
+      position: fixed;
+      left: 50%; transform: translateX(-50%);
+      bottom: calc(16px + env(safe-area-inset-bottom));
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: 1fr;
+      gap: 10px;
+      background: rgba(0,0,0,.45);
+      padding: 8px 10px;
+      border-radius: 999px;
+      backdrop-filter: blur(4px);
+      z-index:55;
     }
-    .control-btn{ width: 44px; height: 44px; font-size: 16px; }
-
-    /* PiP выше панели */
-    #localVideo{
-      width: 140px; height: 96px;
-      bottom: calc(90px + env(safe-area-inset-bottom));
-      right: calc(8px + env(safe-area-inset-right));
+    .control-btn{
+      width: var(--btn);
+      height: var(--btn);
+      border-radius: 50%;
+      border: none;
+      font-size: var(--btn-fz);
+      cursor: pointer;
+      background: rgba(255,255,255,.92);
+      color:#111;
+      display:grid; place-items:center;
     }
-  }
+    .control-btn:active{ transform: translateY(1px); }
+    .danger{ background:#e74c3c; color:#fff; }
+    .toggled{ background:#f39c12; color:#fff; }
 
-  /* Средние: планшеты в портрете */
-  @media (min-width: 480px) and (max-width: 768px){
-    :root{ --pip-w: clamp(26vw, 30vw, 240px); }
-  }
-
-  /* Широкие: десктопы */
-  @media (min-width: 768px){
-    :root{ --pip-w: clamp(18vw, 22vw, 260px); }
-    #controls{ gap: 12px; }
-  }
-
-  /* Низкая высота окна (ландшафт) */
-  @media (max-height: 520px){
-    :root{ --btn: clamp(40px, 7vh, 48px); }
-    #status{ top: calc(8px + env(safe-area-inset-top)); }
-    #roomInfo{ top: calc(8px + env(safe-area-inset-top)); }
-    #controls{ bottom: calc(8px + env(safe-area-inset-bottom)); padding:6px 8px; }
-    #localVideo{
-      bottom: calc(8px + env(safe-area-inset-bottom));
-      right: calc(8px + env(safe-area-inset-right));
+    /* ===== БЛОК КОМНАТЫ (верх-право) ===== */
+    #roomInfo{
+      position: fixed;
+      /* опускаем ниже бейджа статуса на реальную высоту (var(--status-h)) */
+      top: calc(12px + env(safe-area-inset-top) + var(--status-h) + 8px);
+      right: calc(12px + env(safe-area-inset-right));
+      background: rgba(0,0,0,.6);
+      color:#fff;
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: var(--badge-fz);
+      z-index:80;
+      display:grid; gap:6px; justify-items: end;
+      max-width: 60vw;
     }
-  }
+    #copyRoomBtn, #shareRoomBtn{
+      font-size: clamp(12px, 2.2vw, 13px);
+      background:#2196F3; color:#fff;
+      padding: 4px 8px; border:none; border-radius:8px;
+      cursor:pointer;
+    }
+    #copyRoomBtn:hover, #shareRoomBtn:hover{ background:#1976D2; }
 
-  /* Экстремально узкие/низкие: показываем всё целиком */
-  @media (max-width: 340px), (max-height: 420px){
-    #remoteVideo{ object-fit: contain; }
-  }
-</style>
+    /* ===== БРЕЙКПОИНТЫ ===== */
+
+    /* Узкие телефоны */
+    @media (max-width: 420px){
+      #roomInfo{
+        padding: 6px 8px;
+        justify-items: stretch;
+        max-width: 76vw;
+      }
+      #roomInfo button{
+        display:block; width:100%;
+        font-size: 11px; padding: 4px 6px; margin-top: 4px;
+      }
+
+      /* Панель 2×2 */
+      #controls{
+        grid-auto-flow: row;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        padding: 6px;
+        border-radius: 16px;
+        bottom: calc(10px + env(safe-area-inset-bottom));
+      }
+      .control-btn{ width: 44px; height: 44px; font-size: 16px; }
+
+      /* PiP выше панели */
+      #localVideo{
+        width: 140px; height: 96px;
+        bottom: calc(90px + env(safe-area-inset-bottom));
+        right: calc(8px + env(safe-area-inset-right));
+      }
+    }
+
+    /* Средние (планшеты в портрете) */
+    @media (min-width: 480px) and (max-width: 768px){
+      :root{ --pip-w: clamp(26vw, 30vw, 240px); }
+    }
+
+    /* Десктопы */
+    @media (min-width: 768px){
+      :root{ --pip-w: clamp(18vw, 22vw, 260px); }
+      #controls{ gap: 12px; }
+    }
+
+    /* Низкая высота окна (ландшафт) */
+    @media (max-height: 520px){
+      :root{ --btn: clamp(40px, 7vh, 48px); }
+      #status{ top: calc(8px + env(safe-area-inset-top)); }
+      #roomInfo{ top: calc(8px + env(safe-area-inset-top) + var(--status-h) + 6px); }
+      #controls{ bottom: calc(8px + env(safe-area-inset-bottom)); padding:6px 8px; }
+      #localVideo{
+        bottom: calc(8px + env(safe-area-inset-bottom));
+        right: calc(8px + env(safe-area-inset-right));
+      }
+    }
+
+    /* Экстремально узкие/низкие — показываем всё целиком */
+    @media (max-width: 340px), (max-height: 420px){
+      #remoteVideo{ object-fit: contain; }
+    }
+  </style>
 </head>
+
 <body>
   <!-- Форма -->
   <div id="loginForm">
-    <h3 style="text-align:center;">Вход в видеочат</h3>
+    <h3 style="text-align:center; margin-top:0;">Вход в видеочат</h3>
     <div class="form-group">
-      <label for="channelId">Channel ID:</label>
+      <label for="channelId">ScaleDrone Channel ID:</label>
       <input type="text" id="channelId" placeholder="Введите Channel ID">
     </div>
     <div class="form-group">
@@ -270,7 +269,7 @@
     <button class="control-btn" id="camButton" onclick="toggleCam()">📷</button>
   </div>
 
-  <!-- Инфо -->
+  <!-- Инфо о комнате -->
   <div id="roomInfo" class="hidden">
     <div>Комната: <span id="currentRoomName"></span></div>
     <button id="copyRoomBtn" onclick="copyRoomName()">📋 Скопировать</button>
@@ -282,100 +281,191 @@
     let drone, room, pc, localStream;
     let currentChannelId = '', currentRoomName = '';
 
-    const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
-
-    const loginForm = document.getElementById('loginForm');
-    const statusEl = document.getElementById('status');
+    const statusEl   = document.getElementById('status');
     const statusText = document.getElementById('statusText');
-    const statusDot = document.getElementById('statusDot');
+    const statusDot  = document.getElementById('statusDot');
+    const loginForm  = document.getElementById('loginForm');
     const remoteVideo = document.getElementById('remoteVideo');
-    const localVideo = document.getElementById('localVideo');
-    const controls = document.getElementById('controls');
-    const roomInfo = document.getElementById('roomInfo');
+    const localVideo  = document.getElementById('localVideo');
+    const controls    = document.getElementById('controls');
+    const roomInfo    = document.getElementById('roomInfo');
     const currentRoomNameSpan = document.getElementById('currentRoomName');
 
-    async function initializeChat() {
+    const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+
+    // --- утилиты UI ---
+    function setStatus(text, color){
+      statusText.textContent = text;
+      statusDot.style.background = color || 'gray';
+      // Прокинем реальную высоту бейджа в CSS-переменную (для отступа блока Комнаты)
+      requestAnimationFrame(() => {
+        const h = statusEl.offsetHeight || 44;
+        document.documentElement.style.setProperty('--status-h', h + 'px');
+      });
+    }
+
+    function ensurePiPSize(){
+      const w = localVideo.videoWidth || 0;
+      const h = localVideo.videoHeight || 0;
+      if (w < 2 || h < 2){
+        // дефолт на случай, если браузер ещё не отрисовал размер
+        localVideo.style.width = '160px';
+        localVideo.style.height = '110px';
+      }
+    }
+
+    // --- перетаскивание PiP ---
+    function makeDraggable(el){
+      let sx=0, sy=0, ex=0, ey=0, dragging=false;
+      const clamp = (v,min,max)=>Math.min(Math.max(v,min), max);
+
+      function onDown(e){
+        dragging = true;
+        const p = e.touches ? e.touches[0] : e;
+        sx = p.clientX; sy = p.clientY;
+        const r = el.getBoundingClientRect();
+        ex = r.left; ey = r.top;
+        el.style.transition = 'none';
+        e.preventDefault();
+      }
+      function onMove(e){
+        if (!dragging) return;
+        const p = e.touches ? e.touches[0] : e;
+        const dx = p.clientX - sx;
+        const dy = p.clientY - sy;
+        const vw = window.innerWidth, vh = window.innerHeight;
+        const r = el.getBoundingClientRect();
+        const nx = clamp(ex + dx, 4, vw - r.width - 4);
+        const ny = clamp(ey + dy, 4, vh - r.height - 4);
+        el.style.left = nx + 'px';
+        el.style.top  = ny + 'px';
+        el.style.right = 'auto';
+        el.style.bottom = 'auto';
+      }
+      function onUp(){ dragging=false; el.style.transition=''; }
+
+      el.addEventListener('mousedown', onDown);
+      el.addEventListener('touchstart', onDown, {passive:false});
+      window.addEventListener('mousemove', onMove, {passive:false});
+      window.addEventListener('touchmove', onMove, {passive:false});
+      window.addEventListener('mouseup', onUp);
+      window.addEventListener('touchend', onUp);
+    }
+
+    // --- инициализация ---
+    async function initializeChat(){
       currentChannelId = document.getElementById('channelId').value.trim();
       currentRoomName = document.getElementById('roomName').value.trim();
       if (!currentChannelId || !currentRoomName) return alert('Введите Channel ID и комнату');
 
-      loginForm.classList.add('hidden');
       statusEl.classList.remove('hidden');
       controls.classList.remove('hidden');
       roomInfo.classList.remove('hidden');
       remoteVideo.classList.remove('hidden');
-      localVideo.classList.remove('hidden');
+
       currentRoomNameSpan.textContent = currentRoomName;
-      statusText.textContent = 'Нажмите 📞 для звонка';
-      statusDot.style.background = 'gray';
+      setStatus('Запрос доступа к камере/микрофону...', 'gray');
 
-      localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      localVideo.srcObject = localStream;
+      try{
+        localVideo.muted = true;
+        localVideo.playsInline = true;
+
+        localStream = await navigator.mediaDevices.getUserMedia({ video:true, audio:true });
+        localVideo.srcObject = localStream;
+
+        localVideo.onloadedmetadata = () => {
+          localVideo.play().catch(()=>{});
+          ensurePiPSize();
+          localVideo.classList.remove('hidden');
+          makeDraggable(localVideo);
+        };
+
+        loginForm.classList.add('hidden');
+        setStatus('Нажмите 📞 чтобы начать звонок', 'gray');
+      }catch(err){
+        console.error(err);
+        alert('Нет доступа к камере/микрофону');
+        setStatus('Ошибка доступа к устройствам', 'red');
+      }
     }
 
-    function copyRoomName() {
-      navigator.clipboard.writeText(currentRoomName);
-      const btn = document.getElementById('copyRoomBtn');
-      btn.textContent = '✓ Скопировано';
-      setTimeout(()=>btn.textContent='📋 Скопировать',2000);
+    // --- вспомогательные действия ---
+    function copyRoomName(){
+      navigator.clipboard.writeText(currentRoomName).then(()=>{
+        const btn = document.getElementById('copyRoomBtn');
+        const t = btn.textContent;
+        btn.textContent = '✓ Скопировано';
+        setTimeout(()=> btn.textContent = t, 2000);
+      });
     }
-
-    function shareRoom() {
+    function shareRoom(){
       const shareUrl = `${location.origin}${location.pathname}?room=${encodeURIComponent(currentRoomName)}`;
-      navigator.clipboard.writeText(shareUrl);
-      const btn = document.getElementById('shareRoomBtn');
-      btn.textContent = '✓ Ссылка скопирована';
-      setTimeout(()=>btn.textContent='🔗 Поделиться',2000);
-    }
-
-    function startCall() {
-      statusText.textContent = 'Подключение...';
-      statusDot.style.background = 'orange';
-
-      drone = new ScaleDrone(currentChannelId);
-      const roomName = 'observable-' + currentRoomName;
-
-      drone.on('open', error => {
-        if (error) return console.error(error);
-
-        room = drone.subscribe(roomName);
-        room.on('members', members => {
-          const isOfferer = members.length === 2;
-          startWebRTC(isOfferer);
-        });
+      navigator.clipboard.writeText(shareUrl).then(()=>{
+        const btn = document.getElementById('shareRoomBtn');
+        const t = btn.textContent;
+        btn.textContent = '✓ Ссылка скопирована';
+        setTimeout(()=> btn.textContent = t, 2000);
       });
     }
 
-    function sendMessage(message) {
-      drone.publish({ room: 'observable-' + currentRoomName, message });
+    // --- ScaleDrone + WebRTC (основано на рабочем примере GitHub) ---
+    function startCall(){
+      setStatus('Подключение...', 'orange');
+
+      drone = new ScaleDrone(currentChannelId);
+      const roomKey = 'observable-' + currentRoomName;
+
+      drone.on('open', error => {
+        if (error) { console.error(error); setStatus('Ошибка подключения к ScaleDrone', 'red'); return; }
+
+        room = drone.subscribe(roomKey);
+
+        // Когда получили список участников — определяем, кто Offerer
+        room.on('members', members => {
+          const isOfferer = members.length === 2;
+          startWebRTC(isOfferer, roomKey);
+        });
+
+        room.on('open', e => { if (e) console.error(e); });
+      });
     }
 
-    function startWebRTC(isOfferer) {
+    function sendMessage(roomKey, message){
+      if (!drone) return;
+      drone.publish({ room: roomKey, message });
+    }
+
+    function startWebRTC(isOfferer, roomKey){
       pc = new RTCPeerConnection(config);
 
+      // локальные треки
       localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
 
-      pc.onicecandidate = event => {
-        if (event.candidate) sendMessage({ candidate: event.candidate });
+      // ICE кандидаты → через ScaleDrone
+      pc.onicecandidate = e => {
+        if (e.candidate) sendMessage(roomKey, { candidate: e.candidate });
       };
 
-      pc.ontrack = event => {
-        const stream = event.streams[0];
+      // Пришёл удалённый трек
+      pc.ontrack = e => {
+        const stream = e.streams[0];
         if (!remoteVideo.srcObject || remoteVideo.srcObject.id !== stream.id) {
           remoteVideo.srcObject = stream;
-          statusText.textContent = 'Соединение установлено';
-          statusDot.style.background = 'green';
+          setStatus('Соединение установлено', 'green');
         }
       };
 
+      // Offerer создаёт оффер на negotiationneeded
       if (isOfferer) {
         pc.onnegotiationneeded = () => {
           pc.createOffer().then(localDescCreated).catch(console.error);
         };
       }
 
+      // Слушаем сигнальные данные
       room.on('data', (message, client) => {
-        if (client.id === drone.clientId) return;
+        if (client.id === drone.clientId) return; // пропускаем свои сообщения
+
         if (message.sdp) {
           pc.setRemoteDescription(new RTCSessionDescription(message.sdp), () => {
             if (pc.remoteDescription.type === 'offer') {
@@ -383,38 +473,42 @@
             }
           }, console.error);
         } else if (message.candidate) {
-          pc.addIceCandidate(new RTCIceCandidate(message.candidate));
+          pc.addIceCandidate(new RTCIceCandidate(message.candidate)).catch(console.error);
         }
       });
+
+      function localDescCreated(desc){
+        pc.setLocalDescription(desc, () => {
+          sendMessage(roomKey, { sdp: pc.localDescription });
+        }, console.error);
+      }
     }
 
-    function localDescCreated(desc) {
-      pc.setLocalDescription(desc, () => sendMessage({ sdp: pc.localDescription }), console.error);
+    // --- Завершение, mute/cam ---
+    function endCall(){
+      if (pc) { pc.close(); pc = null; }
+      if (drone) { drone.close(); drone = null; }
+      remoteVideo.srcObject = null;
+      setStatus('Звонок завершён', 'red');
     }
 
-    function endCall() {
-      if (pc) { pc.close(); pc=null; }
-      if (drone) { drone.close(); drone=null; }
-      remoteVideo.srcObject=null;
-      statusText.textContent='Звонок завершён';
-      statusDot.style.background='red';
+    function toggleMic(){
+      const t = localStream?.getAudioTracks?.()[0];
+      if (!t) return;
+      t.enabled = !t.enabled;
+      document.getElementById('micButton').classList.toggle('toggled', !t.enabled);
     }
 
-    function toggleMic() {
-      const track = localStream.getAudioTracks()[0];
-      track.enabled = !track.enabled;
-      document.getElementById('micButton').classList.toggle('toggled', !track.enabled);
-    }
-
-    function toggleCam() {
-      const track = localStream.getVideoTracks()[0];
-      track.enabled = !track.enabled;
-      document.getElementById('camButton').classList.toggle('toggled', !track.enabled);
+    function toggleCam(){
+      const t = localStream?.getVideoTracks?.()[0];
+      if (!t) return;
+      t.enabled = !t.enabled;
+      document.getElementById('camButton').classList.toggle('toggled', !t.enabled);
     }
 
     window.addEventListener('beforeunload', endCall);
 
-    // автозаполнение из URL ?room=
+    // --- автозаполнение из ?room= ---
     window.addEventListener('DOMContentLoaded', () => {
       const urlParams = new URLSearchParams(window.location.search);
       const roomParam = urlParams.get('room');
