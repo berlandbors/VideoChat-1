@@ -84,22 +84,24 @@
 
     /* PiP — всегда поверх, с минимальными размерами, не схлопывается */
     #localVideo{
-      position: fixed;
-      right: calc(10px + env(safe-area-inset-right));
-      bottom: calc(14px + env(safe-area-inset-bottom));
-      left: auto; top: auto; /* на случай перетаскивания переключимся на left/top */
-      width: var(--pip-w);
-      height: calc(var(--pip-w) / var(--pip-aspect));
-      min-width: 120px;
-      min-height: 80px;
-      object-fit: cover;
-      border-radius: 10px;
-      border: 2px solid #fff;
-      box-shadow: 0 0 8px rgba(255,255,255,.5), 0 8px 24px rgba(0,0,0,.4);
-      background:#333;
-      z-index:60;
-      cursor: move; /* подсказка что можно таскать */
-    }
+  position: fixed;
+  right: calc(10px + env(safe-area-inset-right));
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  left: auto; top: auto;
+  width: var(--pip-w);
+  aspect-ratio: var(--pip-aspect); /* <-- высота от ширины */
+  height: auto;
+  max-height: 38vh;               /* чтобы не становилось слишком высоким */
+  min-width: 120px;
+  min-height: 80px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 2px solid #fff;
+  box-shadow: 0 0 8px rgba(255,255,255,.5), 0 8px 24px rgba(0,0,0,.4);
+  background:#333;
+  z-index:60;
+  cursor: move;
+}
 
     /* ===== СТАТУС (верх-центр) ===== */
     #status{
@@ -210,6 +212,14 @@
     @media (min-width: 480px) and (max-width: 768px){
       :root{ --pip-w: clamp(26vw, 30vw, 240px); }
     }
+
+/* Планшеты: делаем PiP «повыше» (4:3) и чуть шире */
+@media (min-width: 768px) and (max-width: 1280px){
+  :root{
+    --pip-aspect: 4/3;                  /* было 16/11 → стал выше */
+    --pip-w: clamp(22vw, 26vw, 340px);  /* можно подправить по вкусу */
+  }
+}
 
     /* Десктопы */
     @media (min-width: 768px){
