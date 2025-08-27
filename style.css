@@ -6,11 +6,11 @@
   --btn-fz: clamp(16px, 2.4vw, 18px);
   --badge-fz: clamp(12px, 2.2vw, 14px);
 
-  /* PiP */
+  /* PiP (по умолчанию чуть «широкий») */
   --pip-w: clamp(24vw, 32vw, 220px);
   --pip-aspect: 16/11;
 
-  /* высота бейджа статуса (заполним из JS) */
+  /* высота бейджа статуса (заполняется из JS) */
   --status-h: 44px;
 }
 
@@ -45,7 +45,7 @@ body{
   color:#111;
   padding:25px;
   border-radius: var(--radius);
-  box-shadow: 0 0 15px rgba(0,0,0,0.3);
+  box-shadow: 0 0 15px rgba(0,0,0,.3);
   min-width: min(92vw, 320px);
   max-width: min(92vw, 520px);
 }
@@ -79,9 +79,9 @@ button:hover{ background:#45a049; }
   position: fixed;
   right: calc(10px + env(safe-area-inset-right));
   bottom: calc(14px + env(safe-area-inset-bottom));
-  left: auto; top: auto;
+  left: auto; top: auto; /* при перетаскивании переключимся на left/top */
   width: var(--pip-w);
-  aspect-ratio: var(--pip-aspect); /* высота считается от ширины */
+  aspect-ratio: var(--pip-aspect);
   height: auto;
   max-height: 38vh;
   min-width: 120px;
@@ -147,6 +147,7 @@ button:hover{ background:#45a049; }
 /* ===== БЛОК КОМНАТЫ (верх-право) ===== */
 #roomInfo{
   position: fixed;
+  /* ниже бейджа статуса на его реальную высоту */
   top: calc(12px + env(safe-area-inset-top) + var(--status-h) + 8px);
   right: calc(12px + env(safe-area-inset-right));
   background: rgba(0,0,0,.6);
@@ -193,28 +194,23 @@ button:hover{ background:#45a049; }
 
   /* PiP выше панели */
   #localVideo{
-    width: 150px;
+    width: 140px; height: 96px;
     bottom: calc(90px + env(safe-area-inset-bottom));
     right: calc(8px + env(safe-area-inset-right));
   }
 }
 
-/* Средние (планшеты в портрете) */
-@media (min-width: 480px) and (max-width: 768px){
-  :root{ --pip-w: clamp(26vw, 30vw, 240px); }
-}
-
-/* Планшеты: делаем PiP «повыше» (4:3) и чуть шире */
+/* Планшеты: делаем PiP повыше (4:3) и немного шире */
 @media (min-width: 768px) and (max-width: 1280px){
   :root{
-    --pip-aspect: 4/3;                  /* было 16/11 → стал выше */
+    --pip-aspect: 4/3;
     --pip-w: clamp(22vw, 26vw, 340px);
   }
 }
 
 /* Десктопы */
 @media (min-width: 1280px){
-  :root{ --pip-w: clamp(18vw, 22vw, 260px); }
+  :root{ --pip-w: clamp(18vw, 22vw, 320px); }
   #controls{ gap: 12px; }
 }
 
@@ -230,7 +226,7 @@ button:hover{ background:#45a049; }
   }
 }
 
-/* Экстремально узкие/низкие — показываем всё целиком */
+/* Экстремально узкие/низкие — показываем содержимое целиком */
 @media (max-width: 340px), (max-height: 420px){
   #remoteVideo{ object-fit: contain; }
 }
