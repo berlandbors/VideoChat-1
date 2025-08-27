@@ -1,0 +1,236 @@
+:root{
+  --radius: 12px;
+
+  /* плавные размеры */
+  --btn: clamp(44px, 6.2vw, 56px);
+  --btn-fz: clamp(16px, 2.4vw, 18px);
+  --badge-fz: clamp(12px, 2.2vw, 14px);
+
+  /* PiP */
+  --pip-w: clamp(24vw, 32vw, 220px);
+  --pip-aspect: 16/11;
+
+  /* высота бейджа статуса (заполним из JS) */
+  --status-h: 44px;
+}
+
+*{ box-sizing: border-box; }
+html, body{ height: 100%; }
+body{
+  margin: 0;
+  background:#000;
+  color:#fff;
+  font-family: Arial, sans-serif;
+  overflow: hidden;
+
+  /* safe-area (чёлки/жестовая навигация) */
+  padding-top: env(safe-area-inset-top);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+}
+
+.hidden{ display:none !important; }
+
+/* ===== ФОРМА ВХОДА ===== */
+#loginForm{
+  position: fixed; inset:0;
+  display:grid; place-items:center;
+  z-index:1000;
+  background: rgba(0,0,0,.25);
+  padding:16px;
+}
+#loginForm > .card, #loginForm{
+  background: rgba(255,255,255,.95);
+  color:#111;
+  padding:25px;
+  border-radius: var(--radius);
+  box-shadow: 0 0 15px rgba(0,0,0,0.3);
+  min-width: min(92vw, 320px);
+  max-width: min(92vw, 520px);
+}
+.form-group{ margin-bottom:14px; }
+label{ display:block; font-weight:700; margin-bottom:6px; color:#333; }
+input[type="text"]{
+  width:100%; padding:10px 12px;
+  border:2px solid #ddd; border-radius:10px;
+  font-size: clamp(14px, 2.6vw, 16px);
+  outline:none;
+}
+button{
+  width:100%; padding:12px;
+  font-size: clamp(14px, 2.6vw, 15px);
+  border:none; border-radius:10px; font-weight:700;
+  background:#4CAF50; color:#fff; cursor:pointer;
+}
+button:hover{ background:#45a049; }
+
+/* ===== ВИДЕО ===== */
+#remoteVideo{
+  position: fixed; inset:0;
+  width:100vw; height:100vh;
+  object-fit: cover;
+  background:#000;
+  z-index:0;
+}
+
+/* PiP — всегда поверх, с минимальными размерами, не схлопывается */
+#localVideo{
+  position: fixed;
+  right: calc(10px + env(safe-area-inset-right));
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  left: auto; top: auto;
+  width: var(--pip-w);
+  aspect-ratio: var(--pip-aspect); /* высота считается от ширины */
+  height: auto;
+  max-height: 38vh;
+  min-width: 120px;
+  min-height: 80px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 2px solid #fff;
+  box-shadow: 0 0 8px rgba(255,255,255,.5), 0 8px 24px rgba(0,0,0,.4);
+  background:#333;
+  z-index:60;
+  cursor: move;
+}
+
+/* ===== СТАТУС (верх-центр) ===== */
+#status{
+  position: fixed;
+  top: calc(12px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,.6);
+  color:#fff;
+  padding: 6px 14px;
+  border-radius: 999px;
+  display:flex; align-items:center; gap:8px;
+  z-index:90;
+  font-size: var(--badge-fz);
+  white-space: nowrap;
+  max-width: 86vw;
+  overflow: hidden; text-overflow: ellipsis;
+}
+#statusDot{ width:10px; height:10px; border-radius:50%; background:gray; }
+
+/* ===== ПАНЕЛЬ (низ-центр) ===== */
+#controls{
+  position: fixed;
+  left: 50%; transform: translateX(-50%);
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 10px;
+  background: rgba(0,0,0,.45);
+  padding: 8px 10px;
+  border-radius: 999px;
+  backdrop-filter: blur(4px);
+  z-index:55;
+}
+.control-btn{
+  width: var(--btn);
+  height: var(--btn);
+  border-radius: 50%;
+  border: none;
+  font-size: var(--btn-fz);
+  cursor: pointer;
+  background: rgba(255,255,255,.92);
+  color:#111;
+  display:grid; place-items:center;
+}
+.control-btn:active{ transform: translateY(1px); }
+.danger{ background:#e74c3c; color:#fff; }
+.toggled{ background:#f39c12; color:#fff; }
+
+/* ===== БЛОК КОМНАТЫ (верх-право) ===== */
+#roomInfo{
+  position: fixed;
+  top: calc(12px + env(safe-area-inset-top) + var(--status-h) + 8px);
+  right: calc(12px + env(safe-area-inset-right));
+  background: rgba(0,0,0,.6);
+  color:#fff;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: var(--badge-fz);
+  z-index:80;
+  display:grid; gap:6px; justify-items: end;
+  max-width: 60vw;
+}
+#copyRoomBtn, #shareRoomBtn{
+  font-size: clamp(12px, 2.2vw, 13px);
+  background:#2196F3; color:#fff;
+  padding: 4px 8px; border:none; border-radius:8px;
+  cursor:pointer;
+}
+#copyRoomBtn:hover, #shareRoomBtn:hover{ background:#1976D2; }
+
+/* ===== БРЕЙКПОИНТЫ ===== */
+
+/* Узкие телефоны */
+@media (max-width: 420px){
+  #roomInfo{
+    padding: 6px 8px;
+    justify-items: stretch;
+    max-width: 76vw;
+  }
+  #roomInfo button{
+    display:block; width:100%;
+    font-size: 11px; padding: 4px 6px; margin-top: 4px;
+  }
+
+  /* Панель 2×2 */
+  #controls{
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    padding: 6px;
+    border-radius: 16px;
+    bottom: calc(10px + env(safe-area-inset-bottom));
+  }
+  .control-btn{ width: 44px; height: 44px; font-size: 16px; }
+
+  /* PiP выше панели */
+  #localVideo{
+    width: 150px;
+    bottom: calc(90px + env(safe-area-inset-bottom));
+    right: calc(8px + env(safe-area-inset-right));
+  }
+}
+
+/* Средние (планшеты в портрете) */
+@media (min-width: 480px) and (max-width: 768px){
+  :root{ --pip-w: clamp(26vw, 30vw, 240px); }
+}
+
+/* Планшеты: делаем PiP «повыше» (4:3) и чуть шире */
+@media (min-width: 768px) and (max-width: 1280px){
+  :root{
+    --pip-aspect: 4/3;                  /* было 16/11 → стал выше */
+    --pip-w: clamp(22vw, 26vw, 340px);
+  }
+}
+
+/* Десктопы */
+@media (min-width: 1280px){
+  :root{ --pip-w: clamp(18vw, 22vw, 260px); }
+  #controls{ gap: 12px; }
+}
+
+/* Низкая высота окна (ландшафт) */
+@media (max-height: 520px){
+  :root{ --btn: clamp(40px, 7vh, 48px); }
+  #status{ top: calc(8px + env(safe-area-inset-top)); }
+  #roomInfo{ top: calc(8px + env(safe-area-inset-top) + var(--status-h) + 6px); }
+  #controls{ bottom: calc(8px + env(safe-area-inset-bottom)); padding:6px 8px; }
+  #localVideo{
+    bottom: calc(8px + env(safe-area-inset-bottom));
+    right: calc(8px + env(safe-area-inset-right));
+  }
+}
+
+/* Экстремально узкие/низкие — показываем всё целиком */
+@media (max-width: 340px), (max-height: 420px){
+  #remoteVideo{ object-fit: contain; }
+}
