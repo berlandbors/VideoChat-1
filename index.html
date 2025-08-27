@@ -5,38 +5,39 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Видеочат WebRTC + ScaleDrone</title>
   <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.scaledrone.com/scaledrone.min.js"></script>
 </head>
 <body>
   <!-- Форма -->
-  <div id="loginForm" class="card">
+  <div id="loginForm">
     <h3 style="text-align:center; margin-top:0;">Вход в видеочат</h3>
     <div class="form-group">
-      <label for="channelId">Channel ID:</label>
-      <input type="text" id="channelId" placeholder="Введите Channel ID" autocomplete="off" />
+      <label for="channelId">ScaleDrone Channel ID:</label>
+      <input type="text" id="channelId" placeholder="Введите Channel ID">
     </div>
     <div class="form-group">
       <label for="roomName">Название комнаты:</label>
-      <input type="text" id="roomName" placeholder="Введите название комнаты" autocomplete="off" />
+      <input type="text" id="roomName" placeholder="Введите название комнаты">
     </div>
-    <button id="connectBtn" onclick="initializeChat()" aria-label="Подключиться">Подключиться</button>
+    <button onclick="initializeChat()">Подключиться</button>
   </div>
 
   <!-- Видео -->
   <video id="remoteVideo" autoplay playsinline class="hidden"></video>
-  <video id="localVideo" autoplay muted playsinline class="hidden" aria-label="Локальное видео"></video>
+  <video id="localVideo" autoplay muted playsinline class="hidden"></video>
 
   <!-- Статус -->
-  <div id="status" class="hidden" aria-live="polite" role="status">
-    <div id="statusDot" aria-hidden="true"></div>
+  <div id="status" class="hidden">
+    <div id="statusDot"></div>
     <div id="statusText">Ожидание...</div>
   </div>
 
   <!-- Панель -->
-  <div id="controls" class="hidden" role="toolbar" aria-label="Управление звонком">
-    <button class="control-btn" id="startButton" onclick="startCall()" aria-label="Начать звонок" title="Начать звонок">📞</button>
-    <button class="control-btn danger" onclick="endCall()" aria-label="Завершить звонок" title="Завершить звонок">❌</button>
-    <button class="control-btn" id="micButton" onclick="toggleMic()" aria-label="Микрофон" title="Микрофон">🎤</button>
-    <button class="control-btn" id="camButton" onclick="toggleCam()" aria-label="Камера" title="Камера">📷</button>
+  <div id="controls" class="hidden">
+    <button class="control-btn" id="startButton" onclick="startCall()">📞</button>
+    <button class="control-btn danger" onclick="endCall()">❌</button>
+    <button class="control-btn" id="micButton" onclick="toggleMic()">🎤</button>
+    <button class="control-btn" id="camButton" onclick="toggleCam()">📷</button>
   </div>
 
   <!-- Инфо о комнате -->
@@ -46,8 +47,6 @@
     <button id="shareRoomBtn" onclick="shareRoom()">🔗 Поделиться</button>
   </div>
 
-  <!-- Скрипты -->
-  <script src="https://cdn.scaledrone.com/scaledrone.min.js"></script>
-  <script defer src="script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
