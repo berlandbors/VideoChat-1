@@ -84,24 +84,24 @@
 
     /* PiP — всегда поверх, с минимальными размерами, не схлопывается */
     #localVideo{
-  position: fixed;
-  right: calc(10px + env(safe-area-inset-right));
-  bottom: calc(14px + env(safe-area-inset-bottom));
-  left: auto; top: auto;
-  width: var(--pip-w);
-  aspect-ratio: var(--pip-aspect); /* <-- высота от ширины */
-  height: auto;
-  max-height: 38vh;               /* чтобы не становилось слишком высоким */
-  min-width: 120px;
-  min-height: 80px;
-  object-fit: cover;
-  border-radius: 10px;
-  border: 2px solid #fff;
-  box-shadow: 0 0 8px rgba(255,255,255,.5), 0 8px 24px rgba(0,0,0,.4);
-  background:#333;
-  z-index:60;
-  cursor: move;
-}
+      position: fixed;
+      right: calc(10px + env(safe-area-inset-right));
+      bottom: calc(14px + env(safe-area-inset-bottom));
+      left: auto; top: auto;
+      width: var(--pip-w);
+      aspect-ratio: var(--pip-aspect); /* высота считается от ширины */
+      height: auto;
+      max-height: 38vh;
+      min-width: 120px;
+      min-height: 80px;
+      object-fit: cover;
+      border-radius: 10px;
+      border: 2px solid #fff;
+      box-shadow: 0 0 8px rgba(255,255,255,.5), 0 8px 24px rgba(0,0,0,.4);
+      background:#333;
+      z-index:60;
+      cursor: move;
+    }
 
     /* ===== СТАТУС (верх-центр) ===== */
     #status{
@@ -155,7 +155,6 @@
     /* ===== БЛОК КОМНАТЫ (верх-право) ===== */
     #roomInfo{
       position: fixed;
-      /* опускаем ниже бейджа статуса на реальную высоту (var(--status-h)) */
       top: calc(12px + env(safe-area-inset-top) + var(--status-h) + 8px);
       right: calc(12px + env(safe-area-inset-right));
       background: rgba(0,0,0,.6);
@@ -202,7 +201,7 @@
 
       /* PiP выше панели */
       #localVideo{
-        width: 150px; height: 150px;
+        width: 150px;
         bottom: calc(90px + env(safe-area-inset-bottom));
         right: calc(8px + env(safe-area-inset-right));
       }
@@ -213,16 +212,16 @@
       :root{ --pip-w: clamp(26vw, 30vw, 240px); }
     }
 
-/* Планшеты: делаем PiP «повыше» (4:3) и чуть шире */
-@media (min-width: 768px) and (max-width: 1280px){
-  :root{
-    --pip-aspect: 4/3;                  /* было 16/11 → стал выше */
-    --pip-w: clamp(22vw, 26vw, 340px);  /* можно подправить по вкусу */
-  }
-}
+    /* Планшеты: делаем PiP «повыше» (4:3) и чуть шире */
+    @media (min-width: 768px) and (max-width: 1280px){
+      :root{
+        --pip-aspect: 4/3;                  /* было 16/11 → стал выше */
+        --pip-w: clamp(22vw, 26vw, 340px);
+      }
+    }
 
     /* Десктопы */
-    @media (min-width: 768px){
+    @media (min-width: 1280px){
       :root{ --pip-w: clamp(18vw, 22vw, 260px); }
       #controls{ gap: 12px; }
     }
@@ -248,35 +247,35 @@
 
 <body>
   <!-- Форма -->
-  <div id="loginForm">
+  <div id="loginForm" class="card">
     <h3 style="text-align:center; margin-top:0;">Вход в видеочат</h3>
     <div class="form-group">
       <label for="channelId">Channel ID:</label>
-      <input type="text" id="channelId" placeholder="Введите Channel ID">
+      <input type="text" id="channelId" placeholder="Введите Channel ID" autocomplete="off" />
     </div>
     <div class="form-group">
       <label for="roomName">Название комнаты:</label>
-      <input type="text" id="roomName" placeholder="Введите название комнаты">
+      <input type="text" id="roomName" placeholder="Введите название комнаты" autocomplete="off" />
     </div>
-    <button onclick="initializeChat()">Подключиться</button>
+    <button id="connectBtn" onclick="initializeChat()" aria-label="Подключиться">Подключиться</button>
   </div>
 
   <!-- Видео -->
   <video id="remoteVideo" autoplay playsinline class="hidden"></video>
-  <video id="localVideo" autoplay muted playsinline class="hidden"></video>
+  <video id="localVideo" autoplay muted playsinline class="hidden" aria-label="Локальное видео"></video>
 
   <!-- Статус -->
-  <div id="status" class="hidden">
-    <div id="statusDot"></div>
+  <div id="status" class="hidden" aria-live="polite" role="status">
+    <div id="statusDot" aria-hidden="true"></div>
     <div id="statusText">Ожидание...</div>
   </div>
 
   <!-- Панель -->
-  <div id="controls" class="hidden">
-    <button class="control-btn" id="startButton" onclick="startCall()">📞</button>
-    <button class="control-btn danger" onclick="endCall()">❌</button>
-    <button class="control-btn" id="micButton" onclick="toggleMic()">🎤</button>
-    <button class="control-btn" id="camButton" onclick="toggleCam()">📷</button>
+  <div id="controls" class="hidden" role="toolbar" aria-label="Управление звонком">
+    <button class="control-btn" id="startButton" onclick="startCall()" aria-label="Начать звонок" title="Начать звонок">📞</button>
+    <button class="control-btn danger" onclick="endCall()" aria-label="Завершить звонок" title="Завершить звонок">❌</button>
+    <button class="control-btn" id="micButton" onclick="toggleMic()" aria-label="Микрофон" title="Микрофон">🎤</button>
+    <button class="control-btn" id="camButton" onclick="toggleCam()" aria-label="Камера" title="Камера">📷</button>
   </div>
 
   <!-- Инфо о комнате -->
@@ -288,8 +287,10 @@
 
   <script src="https://cdn.scaledrone.com/scaledrone.min.js"></script>
   <script>
-    let drone, room, pc, localStream;
-    let currentChannelId = '', currentRoomName = '';
+    // ===== Глобальные переменные =====
+    let drone = null, room = null, pc = null, localStream = null;
+    let currentChannelId = '', currentRoomName = '', roomKey = '';
+    let makingOffer = false, ignoreOffer = false, polite = false;
 
     const statusEl   = document.getElementById('status');
     const statusText = document.getElementById('statusText');
@@ -301,12 +302,28 @@
     const roomInfo    = document.getElementById('roomInfo');
     const currentRoomNameSpan = document.getElementById('currentRoomName');
 
-    const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+    // STUN + заготовка под TURN
+    const configuration = {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        // Рекомендуется добавить свой TURN для надёжности:
+        // {
+        //   urls: [
+        //     'turn:YOUR_TURN_HOST:3478?transport=udp',
+        //     'turn:YOUR_TURN_HOST:3478?transport=tcp'
+        //   ],
+        //   username: 'turn_user',
+        //   credential: 'turn_pass'
+        // }
+      ]
+    };
 
-    // --- утилиты UI ---
+    // ===== Утилиты UI =====
     function setStatus(text, color){
       statusText.textContent = text;
       statusDot.style.background = color || 'gray';
+      statusEl.classList.remove('hidden');
+
       // Прокинем реальную высоту бейджа в CSS-переменную (для отступа блока Комнаты)
       requestAnimationFrame(() => {
         const h = statusEl.offsetHeight || 44;
@@ -318,13 +335,13 @@
       const w = localVideo.videoWidth || 0;
       const h = localVideo.videoHeight || 0;
       if (w < 2 || h < 2){
-        // дефолт на случай, если браузер ещё не отрисовал размер
+        // задаём только ширину — высота посчитается через aspect-ratio
         localVideo.style.width = '160px';
-        localVideo.style.height = '110px';
+        localVideo.style.height = '';
       }
     }
 
-    // --- перетаскивание PiP ---
+    // Перетаскивание PiP
     function makeDraggable(el){
       let sx=0, sy=0, ex=0, ey=0, dragging=false;
       const clamp = (v,min,max)=>Math.min(Math.max(v,min), max);
@@ -362,11 +379,17 @@
       window.addEventListener('touchend', onUp);
     }
 
-    // --- инициализация ---
+    // ===== Инициализация (форма) =====
     async function initializeChat(){
       currentChannelId = document.getElementById('channelId').value.trim();
       currentRoomName = document.getElementById('roomName').value.trim();
-      if (!currentChannelId || !currentRoomName) return alert('Введите Channel ID и комнату');
+
+      if (!currentChannelId || !currentRoomName) {
+        alert('Введите Channel ID и комнату');
+        return;
+      }
+
+      roomKey = 'observable-' + currentRoomName;
 
       statusEl.classList.remove('hidden');
       controls.classList.remove('hidden');
@@ -380,15 +403,9 @@
         localVideo.muted = true;
         localVideo.playsInline = true;
 
-        localStream = await navigator.mediaDevices.getUserMedia({ video:true, audio:true });
-        localVideo.srcObject = localStream;
-
-        localVideo.onloadedmetadata = () => {
-          localVideo.play().catch(()=>{});
-          ensurePiPSize();
-          localVideo.classList.remove('hidden');
-          makeDraggable(localVideo);
-        };
+        // Ранний запрос прав (реальный стрим подключим в startWebRTC)
+        const testStream = await navigator.mediaDevices.getUserMedia({ video:true, audio:true });
+        testStream.getTracks().forEach(t => t.stop());
 
         loginForm.classList.add('hidden');
         setStatus('Нажмите 📞 чтобы начать звонок', 'gray');
@@ -399,7 +416,7 @@
       }
     }
 
-    // --- вспомогательные действия ---
+    // Копирование и шаринг
     function copyRoomName(){
       navigator.clipboard.writeText(currentRoomName).then(()=>{
         const btn = document.getElementById('copyRoomBtn');
@@ -408,97 +425,166 @@
         setTimeout(()=> btn.textContent = t, 2000);
       });
     }
-    function shareRoom(){
-      const shareUrl = `${location.origin}${location.pathname}?room=${encodeURIComponent(currentRoomName)}`;
-      navigator.clipboard.writeText(shareUrl).then(()=>{
-        const btn = document.getElementById('shareRoomBtn');
-        const t = btn.textContent;
-        btn.textContent = '✓ Ссылка скопирована';
-        setTimeout(()=> btn.textContent = t, 2000);
-      });
+
+    async function shareRoom(){
+      const shareUrl = `${location.origin || ''}${location.pathname}?room=${encodeURIComponent(currentRoomName)}`;
+      if (navigator.share) {
+        try { await navigator.share({ title: 'Видеочат', url: shareUrl }); return; }
+        catch(e){ /* fallback ниже */ }
+      }
+      await navigator.clipboard.writeText(shareUrl);
+      const btn = document.getElementById('shareRoomBtn');
+      const t = btn.textContent;
+      btn.textContent = '✓ Ссылка скопирована';
+      setTimeout(()=> btn.textContent = t, 2000);
     }
 
-    // --- ScaleDrone + WebRTC (основано на рабочем примере GitHub) ---
+    // ===== Звонок: ScaleDrone + WebRTC =====
     function startCall(){
       setStatus('Подключение...', 'orange');
 
       drone = new ScaleDrone(currentChannelId);
-      const roomKey = 'observable-' + currentRoomName;
 
       drone.on('open', error => {
         if (error) { console.error(error); setStatus('Ошибка подключения к ScaleDrone', 'red'); return; }
 
         room = drone.subscribe(roomKey);
 
-        // Когда получили список участников — определяем, кто Offerer
-        room.on('members', members => {
-          const isOfferer = members.length === 2;
-          startWebRTC(isOfferer, roomKey);
-        });
-
         room.on('open', e => { if (e) console.error(e); });
+
+        // Когда получили список участников — определяем роль
+        room.on('members', members => {
+          // поддерживаем только 2-х участников
+          if (members.length > 2) {
+            setStatus('Комната занята (макс. 2 участника)', 'red');
+            return;
+          }
+          // второй участник — offerer; первый — answerer (polite)
+          const isOfferer = members.length === 2;
+          startWebRTC(isOfferer);
+        });
       });
     }
 
-    function sendMessage(roomKey, message){
+    function publishSignal(message){
       if (!drone) return;
       drone.publish({ room: roomKey, message });
     }
 
-    function startWebRTC(isOfferer, roomKey){
-      pc = new RTCPeerConnection(config);
+    async function startWebRTC(isOfferer){
+      pc = new RTCPeerConnection(configuration);
+      polite = !isOfferer; // второй зашёл → «вежливый»
 
-      // локальные треки
-      localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+      // Локальные медиа
+      try{
+        localStream = await navigator.mediaDevices.getUserMedia({
+          video: { width: {ideal:1280}, height:{ideal:720}, facingMode:'user' },
+          audio: { echoCancellation:true, noiseSuppression:true, autoGainControl:true }
+        });
+        localVideo.srcObject = localStream;
+        localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+      }catch(err){
+        console.error('getUserMedia error:', err);
+        alert('Нет доступа к камере/микрофону');
+        setStatus('Ошибка доступа к устройствам', 'red');
+        return;
+      }
 
       // ICE кандидаты → через ScaleDrone
-      pc.onicecandidate = e => {
-        if (e.candidate) sendMessage(roomKey, { candidate: e.candidate });
+      pc.onicecandidate = e => { if (e.candidate) publishSignal({ candidate: e.candidate }); };
+
+      // Статусы ICE
+      pc.oniceconnectionstatechange = () => {
+        const st = pc.iceConnectionState;
+        console.log('ICE state:', st);
+        if (st === 'connected') setStatus('Соединение установлено', 'green');
+        else if (st === 'disconnected' || st === 'failed') setStatus('Потеря связи…', 'orange');
+        else if (st === 'closed') setStatus('Звонок завершён', 'red');
       };
 
-      // Пришёл удалённый трек
+      // Удалённый трек
       pc.ontrack = e => {
         const stream = e.streams[0];
         if (!remoteVideo.srcObject || remoteVideo.srcObject.id !== stream.id) {
           remoteVideo.srcObject = stream;
-          setStatus('Соединение установлено', 'green');
+          remoteVideo.classList.remove('hidden');
         }
       };
 
-      // Offerer создаёт оффер на negotiationneeded
-      if (isOfferer) {
-        pc.onnegotiationneeded = () => {
-          pc.createOffer().then(localDescCreated).catch(console.error);
-        };
-      }
+      // Perfect negotiation — оффер создаёт инициатор
+      pc.onnegotiationneeded = async () => {
+        try{
+          makingOffer = true;
+          await pc.setLocalDescription(await pc.createOffer());
+          publishSignal({ sdp: pc.localDescription });
+        }catch(e){
+          console.error('negotiation error:', e);
+        }finally{
+          makingOffer = false;
+        }
+      };
 
-      // Слушаем сигнальные данные
-      room.on('data', (message, client) => {
-        if (client.id === drone.clientId) return; // пропускаем свои сообщения
+      // Сигналинг от ScaleDrone
+      room.on('data', async (message, client) => {
+        if (client.id === drone.clientId) return; // игнорируем свои
 
-        if (message.sdp) {
-          pc.setRemoteDescription(new RTCSessionDescription(message.sdp), () => {
-            if (pc.remoteDescription.type === 'offer') {
-              pc.createAnswer().then(localDescCreated).catch(console.error);
+        try{
+          if (message.sdp) {
+            const desc = message.sdp;
+            const offerCollision = (desc.type === 'offer') &&
+              (makingOffer || pc.signalingState !== 'stable');
+
+            ignoreOffer = !polite && offerCollision;
+            if (ignoreOffer) {
+              console.log('Ignoring offer (not polite, collision).');
+              return;
             }
-          }, console.error);
-        } else if (message.candidate) {
-          pc.addIceCandidate(new RTCIceCandidate(message.candidate)).catch(console.error);
+
+            await pc.setRemoteDescription(desc);
+            if (desc.type === 'offer') {
+              await pc.setLocalDescription(await pc.createAnswer());
+              publishSignal({ sdp: pc.localDescription });
+            }
+          } else if (message.candidate) {
+            try { await pc.addIceCandidate(message.candidate); }
+            catch (err) { if (!ignoreOffer) throw err; }
+          }
+        }catch(err){
+          console.error('Signal handling error:', err);
         }
       });
 
-      function localDescCreated(desc){
-        pc.setLocalDescription(desc, () => {
-          sendMessage(roomKey, { sdp: pc.localDescription });
-        }, console.error);
-      }
+      // Показ локального PiP
+      localVideo.onloadedmetadata = () => {
+        localVideo.play().catch(()=>{});
+        ensurePiPSize();
+        localVideo.classList.remove('hidden');
+        makeDraggable(localVideo);
+      };
+
+      setStatus(isOfferer ? 'Идёт инициация звонка…' : 'Ожидание оффера…', 'gray');
     }
 
-    // --- Завершение, mute/cam ---
+    // Завершение, mute/cam
     function endCall(){
-      if (pc) { pc.close(); pc = null; }
-      if (drone) { drone.close(); drone = null; }
-      remoteVideo.srcObject = null;
+      try { if (pc) pc.close(); } catch {}
+      pc = null;
+
+      if (drone) { try { drone.close(); } catch {} drone = null; }
+      room = null;
+
+      if (remoteVideo.srcObject) {
+        try { remoteVideo.srcObject.getTracks().forEach(t => t.stop()); } catch {}
+        remoteVideo.srcObject = null;
+      }
+      if (localStream) {
+        try { localStream.getTracks().forEach(t => t.stop()); } catch {}
+        localStream = null;
+      }
+
+      document.getElementById('micButton')?.classList.remove('toggled');
+      document.getElementById('camButton')?.classList.remove('toggled');
+
       setStatus('Звонок завершён', 'red');
     }
 
@@ -506,24 +592,5 @@
       const t = localStream?.getAudioTracks?.()[0];
       if (!t) return;
       t.enabled = !t.enabled;
-      document.getElementById('micButton').classList.toggle('toggled', !t.enabled);
-    }
-
-    function toggleCam(){
-      const t = localStream?.getVideoTracks?.()[0];
-      if (!t) return;
-      t.enabled = !t.enabled;
-      document.getElementById('camButton').classList.toggle('toggled', !t.enabled);
-    }
-
-    window.addEventListener('beforeunload', endCall);
-
-    // --- автозаполнение из ?room= ---
-    window.addEventListener('DOMContentLoaded', () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const roomParam = urlParams.get('room');
-      if (roomParam) document.getElementById('roomName').value = roomParam;
-    });
-  </script>
-</body>
-</html>
+      const muted = !t.enabled;
+      const btn = document.getEleme
