@@ -345,7 +345,7 @@ button:hover{ background:#45a049; }
     font-size: 11px; padding: 4px 6px; margin-top: 4px;
   }
 
-  /* Панель 2×2 для маленьких кнопок */
+  /* Панель — 4 кнопки в одну строку для маленьких экранов */
   #controls{
     grid-auto-flow: row;
     grid-template-columns: repeat(4, minmax(0, 1fr));

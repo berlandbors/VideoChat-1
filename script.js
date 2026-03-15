@@ -219,7 +219,7 @@ function showNotification(title, body, tag = 'videochat') {
   const settings = loadSettings();
   if (settings.notificationsEnabled === false) return;
   if (Notification.permission !== 'granted') return;
-  if (document.visibilityState === 'visible') return; // only when background
+  if (document.visibilityState === 'visible') return; // skip if tab is visible
   new Notification(title, { body, icon: 'icons/icon-192.png', tag });
 }
 
@@ -623,9 +623,7 @@ async function switchCamera() {
       if (sender) await sender.replaceTrack(newTrack);
     }
 
-    // Replace in localStream and update preview
-    const oldTrack = localStream.getVideoTracks()[0];
-    if (oldTrack) localStream.removeTrack(oldTrack);
+    // Add new track to localStream and update preview
     localStream.addTrack(newTrack);
     localVideo.srcObject = localStream;
   } catch (err) {

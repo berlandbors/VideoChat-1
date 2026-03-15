@@ -54,11 +54,14 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // Only handle same-origin GET requests and ScaleDrone CDN
-  if (e.request.method !== 'GET') return;
+  // Pass through non-GET requests (POST, OPTIONS, etc.) without caching
+  if (e.request.method !== 'GET') {
+    e.respondWith(fetch(e.request));
+    return;
+  }
 
   const isStatic = STATIC.includes(url.pathname) || url.pathname.startsWith('/icons/');
-  const isScaleDrone = url.hostname.includes('scaledrone.com');
+  const isScaleDrone = url.hostname === 'scaledrone.com' || url.hostname.endsWith('.scaledrone.com');
 
   if (isStatic) {
     // Cache-First
