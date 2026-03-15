@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="80" fill="#1a1a2e"/>
+  <!-- Video camera body -->
+  <rect x="60" y="160" width="280" height="190" rx="24" fill="#4CAF50"/>
+  <!-- Camera lens -->
+  <circle cx="200" cy="255" r="60" fill="#1a1a2e"/>
+  <circle cx="200" cy="255" r="44" fill="#2196F3"/>
+  <circle cx="200" cy="255" r="26" fill="#1a1a2e"/>
+  <!-- Video triangle -->
+  <polygon points="380,190 380,320 460,255" fill="#4CAF50" rx="8"/>
+  <!-- Chat bubble -->
+  <rect x="290" y="340" width="160" height="100" rx="18" fill="#fff" opacity="0.9"/>
+  <polygon points="290,400 260,440 310,420" fill="#fff" opacity="0.9"/>
+  <!-- Chat lines -->
+  <rect x="308" y="362" width="110" height="12" rx="6" fill="#1a1a2e" opacity="0.5"/>
+  <rect x="308" y="384" width="80" height="12" rx="6" fill="#1a1a2e" opacity="0.5"/>
+  <rect x="308" y="406" width="95" height="12" rx="6" fill="#1a1a2e" opacity="0.5"/>
+</svg>
