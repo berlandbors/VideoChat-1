@@ -3,14 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Аудио-Видеочат</title>
+  <title>VideoChat+</title>
+  <meta name="description" content="P2P видеочат с текстовым чатом — без сервера" />
+  <meta name="theme-color" content="#4CAF50" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="VideoChat+" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.scaledrone.com/scaledrone.min.js"></script>
 </head>
 <body>
-  <!-- Форма -->
+
+  <!-- Форма входа -->
   <div id="loginForm">
-    <h3 style="text-align:center; margin-top:0;">Вход в видеочат</h3>
+    <h3 style="text-align:center; margin-top:0;">Вход в VideoChat+</h3>
     <div class="form-group">
       <label for="channelId">ScaleDrone Channel ID:</label>
       <input type="text" id="channelId" placeholder="Введите Channel ID">
@@ -24,7 +32,7 @@
 
   <!-- Видео -->
   <video id="remoteVideo" autoplay playsinline class="hidden"></video>
-  <video id="localVideo" autoplay muted playsinline class="hidden"></video>
+  <video id="localVideo"  autoplay muted playsinline class="hidden"></video>
 
   <!-- Статус -->
   <div id="status" class="hidden">
@@ -32,20 +40,44 @@
     <div id="statusText">Ожидание...</div>
   </div>
 
-  <!-- Панель -->
+  <!-- Панель управления -->
   <div id="controls" class="hidden">
-    <button class="control-btn" id="startButton" onclick="startCall()">📞</button>
-    <button class="control-btn danger" onclick="endCall()">❌</button>
-    <button class="control-btn" id="micButton" onclick="toggleMic()">🎤</button>
-    <button class="control-btn" id="camButton" onclick="toggleCam()">📷</button>
-    <button class="control-btn" id="switchCamBtn" onclick="switchCamera()">🔁</button>
+    <button class="control-btn" id="startButton" onclick="startCall()" title="Начать звонок">📞</button>
+    <button class="control-btn danger" onclick="endCall()" title="Завершить звонок">❌</button>
+    <button class="control-btn" id="micButton" onclick="toggleMic()" title="Микрофон">🎤</button>
+    <button class="control-btn" id="camButton" onclick="toggleCam()" title="Камера">📷</button>
+    <button class="control-btn" id="switchCamBtn" onclick="switchCamera()" title="Переключить камеру">🔁</button>
+    <button class="control-btn" id="chatToggleBtn" onclick="toggleChat()" title="Открыть чат">💬<span id="unreadBadge" class="unread-badge hidden">0</span></button>
+    <button class="control-btn" id="notifBtn" onclick="requestNotificationPermission()" title="Уведомления">🔔</button>
   </div>
 
   <!-- Инфо о комнате -->
   <div id="roomInfo" class="hidden">
     <div>Комната: <span id="currentRoomName"></span></div>
-    <button id="copyRoomBtn" onclick="copyRoomName()">📋 Скопировать</button>
+    <button id="copyRoomBtn" onclick="copyRoomName()">�� Скопировать</button>
     <button id="shareRoomBtn" onclick="shareRoom()">🔗 Поделиться</button>
+  </div>
+
+  <!-- Панель чата -->
+  <div id="chatPanel" class="chat-panel hidden">
+    <div class="chat-header">
+      <span>💬 Чат</span>
+      <div class="chat-header-right">
+        <span id="peerStatusIndicator" class="peer-status" title="Статус собеседника">⚪</span>
+        <button class="chat-close-btn" onclick="toggleChat()" title="Свернуть">✕</button>
+      </div>
+    </div>
+    <div id="chatMessages" class="chat-messages"></div>
+    <div id="typingIndicator" class="typing-indicator hidden">Собеседник печатает…</div>
+    <div class="chat-input-area">
+      <textarea
+        id="chatInput"
+        class="chat-input"
+        placeholder="Введите сообщение… (Enter — отправить, Shift+Enter — новая строка)"
+        rows="1"
+      ></textarea>
+      <button class="chat-send-btn" onclick="sendChatMessage()" title="Отправить">➤</button>
+    </div>
   </div>
 
   <script src="script.js"></script>
