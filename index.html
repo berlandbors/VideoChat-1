@@ -12,13 +12,22 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <link rel="stylesheet" href="style.css" />
-  <script src="https://cdn.scaledrone.com/scaledrone.min.js"></script>
+  <script src="https://cdn.scaledrone.com/scaledrone.min.js" crossorigin="anonymous"></script>
 </head>
 <body>
+
+  <!-- Индикатор оффлайн -->
+  <div id="offlineIndicator" class="hidden">
+    <span>📵</span> Нет подключения к интернету
+  </div>
 
   <!-- Форма входа -->
   <div id="loginForm">
     <h3 style="text-align:center; margin-top:0;">Вход в VideoChat+</h3>
+    <div class="form-group">
+      <label for="userName">Ваше имя:</label>
+      <input type="text" id="userName" placeholder="Введите ваше имя">
+    </div>
     <div class="form-group">
       <label for="channelId">ScaleDrone Channel ID:</label>
       <input type="text" id="channelId" placeholder="Введите Channel ID">
@@ -42,13 +51,13 @@
 
   <!-- Панель управления -->
   <div id="controls" class="hidden">
-    <button class="control-btn" id="startButton" onclick="startCall()" title="Начать звонок">📞</button>
-    <button class="control-btn danger" onclick="endCall()" title="Завершить звонок">❌</button>
-    <button class="control-btn" id="micButton" onclick="toggleMic()" title="Микрофон">🎤</button>
-    <button class="control-btn" id="camButton" onclick="toggleCam()" title="Камера">📷</button>
-    <button class="control-btn" id="switchCamBtn" onclick="switchCamera()" title="Переключить камеру">🔁</button>
-    <button class="control-btn" id="chatToggleBtn" onclick="toggleChat()" title="Открыть чат">💬<span id="unreadBadge" class="unread-badge hidden">0</span></button>
-    <button class="control-btn" id="notifBtn" onclick="requestNotificationPermission()" title="Уведомления">🔔</button>
+    <button class="control-btn" id="startButton" onclick="startCall()" title="Начать звонок" aria-label="Начать видеозвонок">📞</button>
+    <button class="control-btn danger" onclick="endCall()" title="Завершить звонок" aria-label="Завершить звонок">❌</button>
+    <button class="control-btn" id="micButton" onclick="toggleMic()" title="Микрофон" aria-label="Включить/выключить микрофон">🎤</button>
+    <button class="control-btn" id="camButton" onclick="toggleCam()" title="Камера" aria-label="Включить/выключить камеру">📷</button>
+    <button class="control-btn" id="switchCamBtn" onclick="switchCamera()" title="Переключить камеру" aria-label="Переключить камеру">🔁</button>
+    <button class="control-btn" id="chatToggleBtn" onclick="toggleChat()" title="Открыть чат" aria-label="Открыть/закрыть чат">💬<span id="unreadBadge" class="unread-badge hidden">0</span></button>
+    <button class="control-btn" id="notifBtn" onclick="requestNotificationPermission()" title="Уведомления" aria-label="Разрешить уведомления">🔔</button>
   </div>
 
   <!-- Инфо о комнате -->
@@ -56,6 +65,44 @@
     <div>Комната: <span id="currentRoomName"></span></div>
     <button id="copyRoomBtn" onclick="copyRoomName()">📋 Скопировать</button>
     <button id="shareRoomBtn" onclick="shareRoom()">🔗 Поделиться</button>
+  </div>
+
+  <!-- Информация о участниках -->
+  <div id="usersInfo" class="hidden">
+    <div class="users-header">👥 Участники (<span id="userCount">0</span>)</div>
+    <div id="usersList"></div>
+  </div>
+
+  <!-- Диагностика сети -->
+  <div id="networkDiag" class="hidden">
+    <div class="diag-header">📊 Диагностика</div>
+    <div id="connectionQuality" class="diag-item">
+      <span class="diag-label">Качество:</span>
+      <span id="qualityValue">Проверка...</span>
+    </div>
+    <div id="latencyInfo" class="diag-item">
+      <span class="diag-label">Задержка:</span>
+      <span id="latencyValue">—</span>
+    </div>
+    <div id="packetLoss" class="diag-item">
+      <span class="diag-label">Потери:</span>
+      <span id="packetLossValue">—</span>
+    </div>
+    <div id="connectionType" class="diag-item">
+      <span class="diag-label">Тип:</span>
+      <span id="connectionTypeValue">—</span>
+    </div>
+    <button id="toggleDiagBtn" class="diag-toggle" onclick="toggleDiagDetails()">▼ Подробнее</button>
+    <div id="diagDetails" class="hidden">
+      <div class="diag-item">
+        <span class="diag-label">Видео:</span>
+        <span id="videoBitrate">—</span>
+      </div>
+      <div class="diag-item">
+        <span class="diag-label">Аудио:</span>
+        <span id="audioBitrate">—</span>
+      </div>
+    </div>
   </div>
 
   <!-- Панель чата -->
