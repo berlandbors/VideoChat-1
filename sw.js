@@ -61,7 +61,7 @@ self.addEventListener('fetch', e => {
   }
 
   const isStatic = STATIC.includes(url.pathname) || url.pathname.startsWith('/icons/');
-  const isScaleDrone = url.hostname === 'scaledrone.com' || url.hostname.endsWith('.scaledrone.com');
+  const isScaleDrone = url.hostname.includes('scaledrone');
 
   if (isStatic) {
     // Cache-First

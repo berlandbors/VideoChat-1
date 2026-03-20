@@ -12,6 +12,10 @@ let typingTimer = null;
 let isTyping = false;
 let peerOnline = false;
 let currentFacingMode = 'user'; // 'user' | 'environment'
+let userName = '';
+let membersInRoom = [];
+let statsInterval = null;
+let isOnline = navigator.onLine;
 
 /* ── DOM refs ── */
 const statusEl   = document.getElementById('status');
@@ -106,6 +110,142 @@ function setPeerOnline(online) {
   peerStatusIndicator.textContent = online ? '🟢' : '⚪';
   peerStatusIndicator.title = online ? 'Собеседник онлайн' : 'Собеседник оффлайн';
 }
+
+/* ── Users Management ── */
+function updateUsersList() {
+  const usersList = document.getElementById('usersList');
+  const userCount = document.getElementById('userCount');
+
+  userCount.textContent = membersInRoom.length;
+  usersList.innerHTML = '';
+
+  membersInRoom.forEach(member => {
+    const div = document.createElement('div');
+    div.className = 'user-item';
+
+    const status = document.createElement('div');
+    status.className = `user-status ${member.online ? '' : 'offline'}`;
+
+    const name = document.createElement('span');
+    name.className = `user-name ${member.isYou ? 'user-you' : ''}`;
+    name.textContent = member.name + (member.isYou ? ' (вы)' : '');
+
+    div.appendChild(status);
+    div.appendChild(name);
+    usersList.appendChild(div);
+  });
+}
+
+function addMember(id, name, isYou = false) {
+  if (!membersInRoom.find(m => m.id === id)) {
+    membersInRoom.push({ id, name, online: true, isYou });
+    updateUsersList();
+  }
+}
+
+function removeMember(id) {
+  membersInRoom = membersInRoom.filter(m => m.id !== id);
+  updateUsersList();
+}
+
+/* ── Network Diagnostics ── */
+let diagDetailsOpen = false;
+let prevBytesSent = 0;
+
+function toggleDiagDetails() {
+  diagDetailsOpen = !diagDetailsOpen;
+  document.getElementById('diagDetails').classList.toggle('hidden', !diagDetailsOpen);
+  document.getElementById('toggleDiagBtn').textContent = diagDetailsOpen ? '▲ Скрыть' : '▼ Подробнее';
+}
+
+async function startNetworkDiagnostics() {
+  if (!pc) return;
+
+  if (statsInterval) clearInterval(statsInterval);
+  prevBytesSent = 0;
+
+  statsInterval = setInterval(async () => {
+    try {
+      const stats = await pc.getStats();
+      let bytesSent = 0, packetsLost = 0, packetsReceived = 0;
+      let currentRoundTripTime = 0;
+      let connectionType = 'проверка...';
+
+      stats.forEach(report => {
+        if (report.type === 'inbound-rtp' && report.mediaType === 'video') {
+          packetsLost += report.packetsLost || 0;
+          packetsReceived += report.packetsReceived || 0;
+        }
+        if (report.type === 'outbound-rtp' && report.mediaType === 'video') {
+          bytesSent += report.bytesSent || 0;
+        }
+        if (report.type === 'candidate-pair' && report.state === 'succeeded') {
+          currentRoundTripTime = report.currentRoundTripTime || 0;
+          const localCandidate = stats.get(report.localCandidateId);
+          connectionType = localCandidate?.candidateType === 'relay' ? 'relay (TURN)' : 'direct (P2P)';
+        }
+      });
+
+      const latency = Math.round(currentRoundTripTime * 1000);
+      const packetLossPercent = packetsReceived > 0
+        ? ((packetsLost / (packetsLost + packetsReceived)) * 100).toFixed(1)
+        : 0;
+
+      // Compute bitrate as delta over 2-second interval (bytes → Kbps)
+      const videoBitrateKbps = ((bytesSent - prevBytesSent) * 8 / 1024 / 2).toFixed(0);
+      prevBytesSent = bytesSent;
+
+      document.getElementById('latencyValue').textContent = latency > 0 ? `${latency} мс` : '—';
+      document.getElementById('packetLossValue').textContent = `${packetLossPercent}%`;
+      document.getElementById('connectionTypeValue').textContent = connectionType;
+
+      const qualityEl = document.getElementById('qualityValue');
+      if (latency < 100 && packetLossPercent < 2) {
+        qualityEl.textContent = 'Отлично';
+        qualityEl.className = 'good';
+      } else if (latency < 250 && packetLossPercent < 5) {
+        qualityEl.textContent = 'Хорошо';
+        qualityEl.className = 'medium';
+      } else {
+        qualityEl.textContent = 'Плохо';
+        qualityEl.className = 'poor';
+      }
+
+      document.getElementById('videoBitrate').textContent = `${videoBitrateKbps} Kbps`;
+      document.getElementById('audioBitrate').textContent = '—';
+
+    } catch (err) {
+      console.warn('Stats error:', err);
+    }
+  }, 2000);
+}
+
+function stopNetworkDiagnostics() {
+  if (statsInterval) {
+    clearInterval(statsInterval);
+    statsInterval = null;
+  }
+  prevBytesSent = 0;
+  document.getElementById('qualityValue').textContent = 'Проверка...';
+  document.getElementById('qualityValue').className = '';
+}
+
+/* ── Online/Offline Detection ── */
+function handleOnline() {
+  isOnline = true;
+  document.getElementById('offlineIndicator').classList.add('hidden');
+  console.info('✓ Подключение к интернету восстановлено');
+}
+
+function handleOffline() {
+  isOnline = false;
+  document.getElementById('offlineIndicator').classList.remove('hidden');
+  console.warn('✗ Потеряно подключение к интернету');
+  setStatus('Нет подключения к интернету', 'red');
+}
+
+window.addEventListener('online', handleOnline);
+window.addEventListener('offline', handleOffline);
 
 /* =========================================================
    DRAGGABLE PiP
@@ -372,7 +512,13 @@ function setupChatInput() {
 async function initializeChat() {
   currentChannelId = document.getElementById('channelId').value.trim();
   currentRoomName  = document.getElementById('roomName').value.trim();
+  userName = document.getElementById('userName').value.trim() || 'Пользователь';
   if (!currentChannelId || !currentRoomName) return alert('Введите Channel ID и комнату');
+
+  if (!navigator.onLine) {
+    alert('Нет подключения к интернету. Подключитесь и попробуйте снова.');
+    return;
+  }
 
   roomKey = 'observable-' + currentRoomName;
 
@@ -380,6 +526,13 @@ async function initializeChat() {
   controls.classList.remove('hidden');
   roomInfo.classList.remove('hidden');
   remoteVideo.classList.remove('hidden');
+
+  document.getElementById('usersInfo').classList.remove('hidden');
+  document.getElementById('networkDiag').classList.remove('hidden');
+
+  // Add yourself to members list (placeholder until drone clientId is known)
+  membersInRoom = [{ id: `local-${Date.now()}`, name: userName, online: true, isYou: true }];
+  updateUsersList();
 
   currentRoomNameSpan.textContent = currentRoomName;
   setStatus('Запрос доступа к камере/микрофону...', 'gray');
@@ -460,10 +613,17 @@ function shareRoom() {
    ScaleDrone + WebRTC
    ========================================================= */
 function startCall() {
+  if (!navigator.onLine) {
+    alert('Нет подключения к интернету');
+    return;
+  }
+
   setStatus('Подключение...', 'orange');
   playCallSound();
 
-  drone = new ScaleDrone(currentChannelId);
+  drone = new ScaleDrone(currentChannelId, {
+    data: { name: userName }
+  });
 
   drone.on('open', error => {
     if (error) { console.error(error); setStatus('Ошибка подключения к ScaleDrone', 'red'); return; }
@@ -471,6 +631,20 @@ function startCall() {
     room = drone.subscribe(roomKey);
 
     room.on('members', members => {
+      // Rebuild members list with current user and existing room members
+      membersInRoom = [{
+        id: drone.clientId,
+        name: userName,
+        online: true,
+        isYou: true
+      }];
+
+      members.forEach(member => {
+        if (member.id !== drone.clientId) {
+          addMember(member.id, member.clientData?.name || 'Собеседник', false);
+        }
+      });
+
       const isOfferer = members.length === 2;
       if (isOfferer) {
         setPeerOnline(true);
@@ -483,8 +657,9 @@ function startCall() {
 
     room.on('member_join', member => {
       if (member.id === drone.clientId) return;
+      addMember(member.id, member.clientData?.name || 'Собеседник', false);
       setPeerOnline(true);
-      renderSystem('Собеседник присоединился');
+      renderSystem(`${member.clientData?.name || 'Собеседник'} присоединился`);
       scrollChatToBottom();
       showNotification('VideoChat+', 'Собеседник присоединился к комнате');
       playJoinSound();
@@ -492,8 +667,9 @@ function startCall() {
 
     room.on('member_leave', member => {
       if (member.id === drone.clientId) return;
+      removeMember(member.id);
       setPeerOnline(false);
-      renderSystem('Собеседник покинул комнату');
+      renderSystem(`${member.clientData?.name || 'Собеседник'} покинул комнату`);
       scrollChatToBottom();
       showNotification('VideoChat+', 'Собеседник покинул комнату');
       typingIndicator.classList.add('hidden');
@@ -523,6 +699,9 @@ function startWebRTC(isOfferer) {
       remoteVideo.srcObject = stream;
       setStatus('Соединение установлено', 'green');
       showNotification('VideoChat+', 'Видеосвязь установлена');
+
+      // Start network diagnostics
+      startNetworkDiagnostics();
     }
   };
 
@@ -551,11 +730,13 @@ function startWebRTC(isOfferer) {
 
     // WebRTC signaling (sdp / candidate)
     if (message.sdp) {
-      pc.setRemoteDescription(new RTCSessionDescription(message.sdp), () => {
-        if (pc.remoteDescription.type === 'offer') {
-          pc.createAnswer().then(localDescCreated).catch(console.error);
-        }
-      }, console.error);
+      pc.setRemoteDescription(new RTCSessionDescription(message.sdp))
+        .then(() => {
+          if (pc.remoteDescription.type === 'offer') {
+            return pc.createAnswer().then(localDescCreated);
+          }
+        })
+        .catch(console.error);
       return;
     }
     if (message.candidate) {
@@ -564,9 +745,11 @@ function startWebRTC(isOfferer) {
   });
 
   function localDescCreated(desc) {
-    pc.setLocalDescription(desc, () => {
-      sendSignal({ sdp: pc.localDescription });
-    }, console.error);
+    return pc.setLocalDescription(desc)
+      .then(() => {
+        sendSignal({ sdp: pc.localDescription });
+      })
+      .catch(console.error);
   }
 }
 
@@ -582,6 +765,13 @@ function endCall() {
   renderSystem('Звонок завершён');
   scrollChatToBottom();
   setStatus('Звонок завершён', 'red');
+
+  // Stop diagnostics
+  stopNetworkDiagnostics();
+
+  // Clear members except yourself
+  membersInRoom = membersInRoom.filter(m => m.isYou);
+  updateUsersList();
 }
 
 function toggleMic() {
@@ -608,8 +798,11 @@ async function switchCamera() {
   btn.disabled = true;
 
   try {
-    // Stop current video track
-    localStream.getVideoTracks().forEach(t => t.stop());
+    // Remove and stop current video tracks
+    localStream.getVideoTracks().forEach(t => {
+      localStream.removeTrack(t);
+      t.stop();
+    });
 
     const newStream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: currentFacingMode },
